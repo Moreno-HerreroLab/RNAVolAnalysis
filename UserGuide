@@ -1,0 +1,54 @@
+# RnaVol analysis user guide
+
+Here we provide an user guide for the RNAVolAnalysis GUI. This was specially developed for calculating the volume of RNA molecules regions. With this algorithm, molecules are segmented into regions and linkers connecting them. Here is an step by step guide on how to use the program:
+
+1. Load Image:
+   - Launch MATLAB on your computer.
+   - Clone or download the repository and navigate to its directory.
+   - Open the MATLAB GUI by running the `RNAVolAnalysis.m` script.
+   - Browse and select the folder whre AFM image you want to analyse is stored. Click on the "Load" button. If there are many images, you can load them clicking the ‘next’ or ‘previous’ buttons.
+
+2. Apply Gaussian Smoothing:
+   - Input the desired standard deviation parameter for the Gaussian filter.
+   - Click "Apply" to smooth the image. This step enhances the image quality for analysis.
+
+3. Provide Image Size and Pixels:
+   - The GUI will display a default the dimensions of the loaded image in pixels and nanometers. Please enter the size in nanometer of your AFM image. Note that by default, all images will be redimensioned to 514x514 pixels. If you want other values, you will need to change in the code.
+
+4. Threshold Selection for Molecule:
+   - Choose either "Auto-Threshold" or manually adjust the threshold using the slider or numerical input bar.
+   - Adjust the threshold until you're satisfied with the molecule segmentation.
+   - Click "Select Molecule Threshold" to save the threshold value.
+
+5. Domain Threshold Selection:
+   - Gradually increase the threshold to separate individual regions within the molecule.
+   - For each domain, click the "Select Domain Threshold" button to save the threshold value.
+   - Repeat this step for all domains you want to analyze.
+
+6. Run Analysis:
+   - Once you've selected threshold values for all domains, click the "Run" button.
+   - The GUI will process the image and calculate the volumes of the segmented regions.
+
+7. View Volume Table:
+   - After analysis, a table will be displayed on the GUI showing volume values for each region.
+   - The segmented regions will also be displayed on the figure.
+
+8. Sort Regions for Export:
+   - Examine the table and determine the order in which you want to export the regions.
+   - Sort the regions based on your preference or analysis requirements, first selecting the value in the table and then pressing the ‘Sort’ button
+    -Sorted values will appear in the adjacent table. If you make a mistake, press ‘Clear Sort’ to start again
+
+9. Choose colors for your segmented image (Optional):
+   - If you want to export an image with the regions, select a color in the menu (in the assign color button group) and write the region number you want to color.
+   - Press ‘Change color’
+   - If you want to reset the colors and start all over again, press ‘Reset colors’
+
+10. Save Molecule Data:
+    - If needed, you can save the volume values, thresholds values used and background noise for further analysis.
+    - Click the "Save Molecule" button to save all these values in a .txt file. As long as you do not close the GUI window, the following molecules data will be save in the same txt file, named ‘Results’
+
+## Note:
+- Ensure that you have MATLAB installed and have the necessary toolboxes for image processing and GUI development.
+-For the autothreshold to work, you need to add to your directory the isodata.m (https://www.mathworks.com/matlabcentral/fileexchange/3195-automatic-thresholding)
+- Take time to adjust the thresholds accurately, as they significantly affect the quality of segmentation and volume calculation.
+-If you have any question or comment, please contact em.martin@cnb.csic.es 
