@@ -48,7 +48,6 @@ end
 function data_path_CreateFcn(hObject, ~, ~)
 
 data_directory = 'C:\Users\evatr\OneDrive - UAM\Documentos\MorenoHerreroLab\Projects_tesis\CONCR\CONCR data sorted\128 dataset\txt';
-%data_directory = 'C:\Users\Eva Martin\Documents\MorenoHerreroLab\Projects_tesis\CONCR\CONCR data sorted\128 dataset\txt';
 set(hObject,'String', num2str(data_directory));
 
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -60,25 +59,17 @@ end
 function RNAVolAnalysis_OpeningFcn(hObject, ~, handles, varargin)
 
 %Here we inizialite the values of the GUI
+
 set(handles.smooth_edit, 'String', '5')
 set(handles.sort_edit,'Max', 50)
 set(handles.sort_edit,'String', 'Sorted List')
-handles.Results_Cell={};
-handles.Results_Props={};
-handles.Results_CellSkel={};
-handles.Probabilities={};
-handles.CumSums={};
 handles.color='b';
 handles.Remove_Smaller_Than=150;
 
 handles.resize_factor=512;
-%handles.size_nm=80;
 
 set(handles.pixel_size,'String', num2str(handles.resize_factor));
 
-%set(handles.nm_size,'String', num2str(handles.size_nm));
-
-%handles.factor=handles.size_nm/handles.resize_factor;
 
 % Choose default command line output for RNAVolAnalysis
 handles.output = hObject;
@@ -103,6 +94,7 @@ varargout{1} = handles.output;
 
 % --- Executes on button press in browser. Browses a data_path for the
 % images folder.
+
 function browser_Callback(~, ~, handles)
 
 input_pathname=uigetdir();
@@ -125,7 +117,6 @@ function load_first_Callback(hObject, ~, handles)
 
 h = warndlg('You are loading a new folder. Please check the number of nucleotides of this sample is correct! Otherwise it will return incorrect Cumulative Sums', 'Warning');
 uiwait(h);
-figure(h);
 
 handles.order=0;
 handles.data_directory=get(handles.data_path,'String');
@@ -517,7 +508,7 @@ function save_molecule_Callback(hObject, ~, handles)
 
 st=handles.FileName;
 ix=find(st=='.');
-num=str2double(st(1:ix-1));
+%num=str2double(st(1:ix-1));
 
 
 
@@ -542,32 +533,14 @@ for i=2:length(cumu_nucleotides)
     end 
 end 
 
-
-% handles.Probabilities=[handles.Probabilities;{st probabilities}];
-% writecell(handles.Probabilities,'Probabilities.dat');
-
-guardarLinea('Probabilities.csv',{st probabilities})
-
 %------------------------------------------------------------------------
-
-
-% 
-% cell1={ st, handles.vol_sort_array};
-% cell11={'CumSum',  cumu_nucleotides};
-% cellinfo={'info', handles.infor};
-% cell2={'thresholds',handles.thres_array};
-% cell3={'background noise', handles.Noise};
 
 total_cell = {st, handles.vol_sort_array,'info', handles.infor,'thresholds',handles.thres_array,'background noise', handles.Noise};
 
-% handles.Results_Cell=[handles.Results_Cell;cell1,cell11,cellinfo,cell2,cell3];
-% handles.CumSums=[handles.CumSums;{st cumu_nucleotides}];
-
-%writecell(handles.CumSums,'CumSums.dat');
 guardarLinea('CumuSums.csv',{st cumu_nucleotides})
-
-%writecell(handles.Results_Cell,'Results.dat');
 guardarLinea('Results.csv', total_cell)
+guardarLinea('Probabilities.csv',{st probabilities})
+
 guidata(hObject, handles);
 
 
@@ -600,38 +573,6 @@ guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function threshold_edit_CreateFcn(hObject, ~, ~)
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-
-
-function nm_size_Callback(hObject, ~, handles)
-% hObject    handle to nm_size (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of nm_size as text
-%        str2double(get(hObject,'String')) returns contents of nm_size as a double
-
-
-handles.size_nm=str2double(get(handles.nm_size,'String'));
-%handles.factor=handles.size_nm/handles.resize_factor;
-
-
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function nm_size_CreateFcn(hObject, ~, ~)
-% hObject    handle to nm_size (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 % Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
@@ -845,7 +786,6 @@ plot(y,x,'.','LineWidth',20);
 
 
 link_border=bwperim(linker_map);
-%[x,y]=find(linker_map);
 [x, y] = find(link_border);
 plot(y,x,'r.','LineWidth',10);
 
@@ -918,7 +858,6 @@ end
 axes(handles.axes3);
 hold on 
 handles.RNA_fig=handles.RNA;
-%label=[];
 for i=1:total_dom
     [x,y]=find(handles.labelMatrix == i);   
     handles.RNA_fig=insertText(handles.RNA_fig, [mean(y) mean(x)], num2str(i),'FontSize',10);
@@ -1378,33 +1317,8 @@ function saveSkel_Callback(hObject, ~, handles)
 
 
 st=handles.FileName;
-ix=find(st=='.');
-num=str2double(st(1:ix-1));
-
-% 
-% cell2={'Skeleton Length',handles.skeleton_lenght};
-% cell3={'Main Chain Length',handles.mc};
-% cell1={'Thres',handles.mol_thres};
-% 
-% cell4={'MajorAxis Lenght',handles.MajorAxisLength};
-% cell5={'Smallest diameter',handles.diametro_minimo};
-% cell6={'MinFeret',handles.MinFeret};
-% cell7={'MaxFeret',handles.MaxFeret};
-% 
-% handles.Results_CellSkel=[handles.Results_CellSkel;num,cell1,cell2,cell3,cell4,cell5,cell6,cell7];
 
 
-[~, name, ~] = fileparts(handles.FileName);
-
-% imwrite(handles.skeleton_image, [pwd,'\skels\',name,'skel','.tiff'])
-% saveas(handles.axes8, [name,'skel'], 'tif')
-% 
-% imwrite(handles.RNAjpg, [pwd,'\molecules\',name,'image','.tiff'])
-% imwrite(handles.RNAjpg_tosave, [pwd,'\segmented\',name,'segmented','.tiff'])
-% imwrite(handles.RNAskel_tosave, [pwd,'\skelsdots\',name,'skeldotted','.tiff'])
-
-
-%writecell(handles.Results_CellSkel,'Results_Skels.dat');
 total_cell ={st,handles.mol_thres,'Skeleton Length',handles.skeleton_lenght,'Main Chain Length',handles.mc,'MajorAxis Lenght',handles.MajorAxisLength,'Smallest diameter',handles.diametro_minimo,'MinFeret',handles.MinFeret,'MaxFeret',handles.MaxFeret};
 guardarLinea('Results_Skels.csv',total_cell)
 guidata(hObject, handles);
