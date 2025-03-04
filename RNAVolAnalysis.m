@@ -115,7 +115,7 @@ if chckfldr ~= 7,  msgbox('The provided directory is not valid. Please browse or
 % the folder on data_path 
 function load_first_Callback(hObject, ~, handles)
 
-h = warndlg('You are loading a new folder. Please check the number of nucleotides of this sample is correct! Otherwise it will return incorrect Cumulative Sums', 'Warning');
+h = warndlg('Are you loading a new sample? Please check the number of nucleotides of this sample is correct! Otherwise it will return incorrect Cumulative Sums', 'Warning');
 uiwait(h);
 
 handles.order=0;
