@@ -485,9 +485,11 @@ function guardarLinea(filename, celda)
         datos = celda{j+1};
         if isnumeric(datos)  % Si los datos son numéricos, conviértelos a texto
             fprintf(fid, '%g,', datos(1:end)); % Escribir los valores separados por comas
+            fprintf(fid, ';'); % Escribir los valores separados por comas
             
         elseif ischar(datos) || isstring(datos) % Si es texto
             fprintf(fid, '%s,', datos);
+            fprintf(fid, ';');
         else
             error('Formato de datos no soportado.');
         end
