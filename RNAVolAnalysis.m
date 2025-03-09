@@ -277,6 +277,9 @@ end
 % --- Executes on button press in push_auto_thres.
 function push_auto_thres_Callback(hObject, ~, handles)
 
+% if exist(handles.RNA2, 'var') ==0
+%     msgbox('Please smooth the image first','ERROR', 'error')
+% else 
 handles.threshold=isodata(handles.RNA2);
 set(handles.threshold_edit,'String',num2str(handles.threshold));
 set(handles.thres_slider,'Value',handles.threshold);
@@ -504,7 +507,7 @@ function SaveLine(filename, celda)
         end
     end 
     fprintf(fid, '\n'); % Agregar salto de línea al final
-    fclose(fid)
+    fclose(fid);
 
 
 
@@ -515,9 +518,11 @@ function save_molecule_Callback(hObject, ~, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 st=string(handles.FileName);
-%ix=find(st=='.');
-%num=str2double(st(1:ix-1));
 
+
+total_cell ={st,handles.mol_thres,handles.skeleton_lenght,handles.mc,handles.MajorAxisLength,handles.diametro_minimo,handles.MinFeret,handles.MaxFeret};
+SaveLine('Results_Skels.csv',total_cell)
+guidata(hObject, handles);
 
 
 %First we calculate wich nucleotides are in a domain:
@@ -663,7 +668,7 @@ imshow(RNA3);
 function [linkers,objects]=main_run(handles)
 
 handles.thres_array=sort(handles.thres_array);
-
+skeletonize(handles)
 n_steps=length(handles.thres_array);
 linker_map=zeros(size(handles.RNA2));
 object_map=zeros(size(handles.RNA2));
@@ -1070,13 +1075,7 @@ guidata(hObject, handles);
 
 
 
-
-
-% --- Executes on button press in skeletonize_button.
-function skeletonize_button_Callback(hObject, ~, handles)
-% hObject    handle to skeletonize_button (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+function skeletonize(handles)
 
 [m,n]=size(handles.RNA2);
 handles.skeleton_image=ones(m,n,3);
@@ -1115,7 +1114,6 @@ hold on
 scatter(y,x,'filled','SizeData',1,'MarkerFaceColor','k');
 handles.RNAskel_tosave=handles.skeleton_image;
 
-guidata(hObject, handles);
 
 
 ep = bwmorph(handles.skeleton,'endpoints');
@@ -1313,24 +1311,6 @@ handles.MajorAxisLength =props1.MajorAxisLength*handles.factor;
 handles.MaxFeret= props1.MaxFeretDiameter*handles.factor;
 handles.MinFeret= props1.MinFeretDiameter*handles.factor;
 
-
-guidata(hObject, handles);
-
-
-
-
-% --- Executes on button press in saveSkel.
-function saveSkel_Callback(hObject, ~, handles)
-% hObject    handle to saveSkel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-st=handles.FileName;
-
-total_cell ={st,handles.mol_thres,handles.skeleton_lenght,handles.mc,handles.MajorAxisLength,handles.diametro_minimo,handles.MinFeret,handles.MaxFeret};
-SaveLine('Results_Skels.csv',total_cell)
-guidata(hObject, handles);
 
 % --- Executes on button press in checkbox2.
 function checkbox2_Callback(hObject, eventdata, handles)
