@@ -71,6 +71,15 @@ handles.resize_factor=512;
 set(handles.pixel_size,'String', num2str(handles.resize_factor));
 
 
+
+delete *.csv
+
+headerSkels = {'File Name','Threshold','Skeleton Length','Main Chain Length','MajorAxis Lenght','Smallest diameter','MinFeret','MaxFeret'};
+SaveLine('Results_Skels.csv',headerSkels)
+
+headerMolecule = {'File Name', 'Volumes', 'info', 'thresholds','background noise'};
+SaveLine('Results.csv', headerMolecule)
+
 % Choose default command line output for RNAVolAnalysis
 handles.output = hObject;
 
@@ -115,7 +124,7 @@ if chckfldr ~= 7,  msgbox('The provided directory is not valid. Please browse or
 % the folder on data_path 
 function load_first_Callback(hObject, ~, handles)
 
-h = warndlg('You are loading a new folder. Please check the number of nucleotides of this sample is correct! Otherwise it will return incorrect Cumulative Sums', 'Warning');
+h = warndlg('Are you loading a new sample? Please check the number of nucleotides is correct! Otherwise it will return incorrect Cumulative Sums', 'Warning');
 uiwait(h);
 
 handles.order=0;
@@ -268,6 +277,9 @@ end
 % --- Executes on button press in push_auto_thres.
 function push_auto_thres_Callback(hObject, ~, handles)
 
+% if exist(handles.RNA2, 'var') ==0
+%     msgbox('Please smooth the image first','ERROR', 'error')
+% else 
 handles.threshold=isodata(handles.RNA2);
 set(handles.threshold_edit,'String',num2str(handles.threshold));
 set(handles.thres_slider,'Value',handles.threshold);
@@ -286,7 +298,6 @@ handles.objects=objects;
 [handles.Volume,handles.Noise,handles.labelMatrix]=extend_molecule(handles);
 
 
-%set(handles.uitable1,'Data',handles.Volume')
 cell1={handles.Volume.vol};
 cell2={handles.Volume.info};
 handles.TAB=[cell1;cell2];
@@ -358,10 +369,7 @@ aux(handles.labelMatrix == handles.row)=1;
 border=bwperim(aux);
 [xx,yy]=find(border);
 plot(yy,xx,'.k','MarkerSize',10);
-% 
-% %s=scatter(y,x,'filled','SizeData',1);
-% s=scatter(y,x,'filled','SizeData',1,'MarkerFaceColor',handles.color);
-% s.MarkerFaceAlpha = .3;
+
 se = strel('disk',1);
 aux=zeros(size(handles.RNAjpg));
 aux(border)=1;
@@ -434,13 +442,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
-function region_color_edit_Callback(~, ~, ~)
-
-% Hints: get(hObject,'String') returns contents of region_color_edit as text
-%        str2double(get(hObject,'String')) returns contents of region_color_edit as a double
-
-
 % --- Executes during object creation, after setting all properties.
 function region_color_edit_CreateFcn(hObject, ~, ~)
 
@@ -473,29 +474,28 @@ s.MarkerFaceAlpha = .2;
 
 guidata(hObject, handles);
 
-function guardarLinea(filename, celda)
+function SaveLine(filename, celda)
     fid = fopen(filename, 'a'); % 'a' para agregar sin sobrescribir
     if fid == -1
         error('No se pudo abrir el archivo.');
     end
+    for j=1:length(celda)
+        datos = celda{j};
+        if isnumeric(datos) && length(datos)>1% Si los datos son numéricos, conviértelos a texto
+            fprintf(fid, '[');
+            fprintf(fid, '%g,', datos(1:end-1)); % Escribir los valores separados por comas
+            fprintf(fid, '%g]',datos(end));
+            fprintf(fid, ';'); % Escribir los valores separados por comas
+        elseif isnumeric(datos) && length(datos)==1
+            fprintf(fid, '%g;',datos);
 
-    j = 1;
-    while j<length(celda)
-        fprintf(fid, '%s,', celda{j});
-        datos = celda{j+1};
-        if isnumeric(datos)  % Si los datos son numéricos, conviértelos a texto
-            fprintf(fid, '%g,', datos(1:end)); % Escribir los valores separados por comas
-            
-        elseif ischar(datos) || isstring(datos) % Si es texto
-            fprintf(fid, '%s,', datos);
+        elseif ischar(datos) || isstring(datos)
+            fprintf(fid, '%s;',datos);
         else
             error('Formato de datos no soportado.');
         end
-        
-        j= j+2;
     end 
     fprintf(fid, '\n'); % Agregar salto de línea al final
-
     fclose(fid);
 
 
@@ -506,10 +506,12 @@ function save_molecule_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-st=handles.FileName;
-ix=find(st=='.');
-%num=str2double(st(1:ix-1));
+st=string(handles.FileName);
 
+
+total_cell ={st,handles.mol_thres,handles.skeleton_lenght,handles.mc,handles.MajorAxisLength,handles.diametro_minimo,handles.MinFeret,handles.MaxFeret};
+SaveLine('Results_Skels.csv',total_cell)
+guidata(hObject, handles);
 
 
 %First we calculate wich nucleotides are in a domain:
@@ -523,7 +525,7 @@ normalized_volumes=handles.vol_sort_array./total_vol;
 nucleotides=normalized_volumes.*N_nucleotides;
 cumu_nucleotides=round(cumsum(nucleotides),0);
 probabilities=zeros(1,N_nucleotides);
-handles.infor
+
 if handles.infor(1)=="Domain" 
         probabilities(nucleotides_arr<=cumu_nucleotides(1))=1;
 end 
@@ -534,12 +536,13 @@ for i=2:length(cumu_nucleotides)
 end 
 
 %------------------------------------------------------------------------
+stringResult = "[" + strjoin(handles.infor, ",") + "]";
 
-total_cell = {st, handles.vol_sort_array,'info', handles.infor,'thresholds',handles.thres_array,'background noise', handles.Noise};
+total_cell = {st, handles.vol_sort_array, stringResult,handles.thres_array, handles.Noise};
+SaveLine('Results.csv', total_cell)
 
-guardarLinea('CumuSums.csv',{st cumu_nucleotides})
-guardarLinea('Results.csv', total_cell)
-guardarLinea('Probabilities.csv',{st probabilities})
+SaveLine('CumuSums.csv',{st cumu_nucleotides})
+SaveLine('Probabilities.csv',{st probabilities})
 
 guidata(hObject, handles);
 
@@ -654,7 +657,7 @@ imshow(RNA3);
 function [linkers,objects]=main_run(handles)
 
 handles.thres_array=sort(handles.thres_array);
-
+skeletonize(handles)
 n_steps=length(handles.thres_array);
 linker_map=zeros(size(handles.RNA2));
 object_map=zeros(size(handles.RNA2));
@@ -1061,13 +1064,7 @@ guidata(hObject, handles);
 
 
 
-
-
-% --- Executes on button press in skeletonize_button.
-function skeletonize_button_Callback(hObject, ~, handles)
-% hObject    handle to skeletonize_button (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+function skeletonize(handles)
 
 [m,n]=size(handles.RNA2);
 handles.skeleton_image=ones(m,n,3);
@@ -1106,7 +1103,6 @@ hold on
 scatter(y,x,'filled','SizeData',1,'MarkerFaceColor','k');
 handles.RNAskel_tosave=handles.skeleton_image;
 
-guidata(hObject, handles);
 
 
 ep = bwmorph(handles.skeleton,'endpoints');
@@ -1189,6 +1185,7 @@ hold off;
 
 skel_length=0;
 skeleton_aux=handles.skeleton;
+
 while length(B_loc) >= 2
     branches_length=[];
     matrix_resta=false(size(handles.skeleton));
@@ -1303,25 +1300,6 @@ handles.MajorAxisLength =props1.MajorAxisLength*handles.factor;
 handles.MaxFeret= props1.MaxFeretDiameter*handles.factor;
 handles.MinFeret= props1.MinFeretDiameter*handles.factor;
 
-
-guidata(hObject, handles);
-
-
-
-
-% --- Executes on button press in saveSkel.
-function saveSkel_Callback(hObject, ~, handles)
-% hObject    handle to saveSkel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-st=handles.FileName;
-
-
-total_cell ={st,handles.mol_thres,'Skeleton Length',handles.skeleton_lenght,'Main Chain Length',handles.mc,'MajorAxis Lenght',handles.MajorAxisLength,'Smallest diameter',handles.diametro_minimo,'MinFeret',handles.MinFeret,'MaxFeret',handles.MaxFeret};
-guardarLinea('Results_Skels.csv',total_cell)
-guidata(hObject, handles);
 
 % --- Executes on button press in checkbox2.
 function checkbox2_Callback(hObject, eventdata, handles)
