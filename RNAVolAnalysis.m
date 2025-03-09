@@ -298,7 +298,6 @@ handles.objects=objects;
 [handles.Volume,handles.Noise,handles.labelMatrix]=extend_molecule(handles);
 
 
-%set(handles.uitable1,'Data',handles.Volume')
 cell1={handles.Volume.vol};
 cell2={handles.Volume.info};
 handles.TAB=[cell1;cell2];
@@ -370,10 +369,7 @@ aux(handles.labelMatrix == handles.row)=1;
 border=bwperim(aux);
 [xx,yy]=find(border);
 plot(yy,xx,'.k','MarkerSize',10);
-% 
-% %s=scatter(y,x,'filled','SizeData',1);
-% s=scatter(y,x,'filled','SizeData',1,'MarkerFaceColor',handles.color);
-% s.MarkerFaceAlpha = .3;
+
 se = strel('disk',1);
 aux=zeros(size(handles.RNAjpg));
 aux(border)=1;
@@ -444,13 +440,6 @@ function popupmenu_colores_CreateFcn(hObject, ~, ~)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-
-function region_color_edit_Callback(~, ~, ~)
-
-% Hints: get(hObject,'String') returns contents of region_color_edit as text
-%        str2double(get(hObject,'String')) returns contents of region_color_edit as a double
 
 
 % --- Executes during object creation, after setting all properties.
