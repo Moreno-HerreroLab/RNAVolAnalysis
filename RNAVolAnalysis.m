@@ -71,6 +71,15 @@ handles.resize_factor=512;
 set(handles.pixel_size,'String', num2str(handles.resize_factor));
 
 
+
+delete *.csv
+
+headerSkels = {'File Name','Threshold','Skeleton Length','Main Chain Length','MajorAxis Lenght','Smallest diameter','MinFeret','MaxFeret'};
+SaveLine('Results_Skels.csv',headerSkels)
+
+headerMolecule = {'File Name', 'Volumes', 'info', 'thresholds','background noise'};
+SaveLine('Results.csv', headerMolecule)
+
 % Choose default command line output for RNAVolAnalysis
 handles.output = hObject;
 
@@ -473,33 +482,29 @@ s.MarkerFaceAlpha = .2;
 
 guidata(hObject, handles);
 
-function guardarLinea(filename, celda)
+function SaveLine(filename, celda)
     fid = fopen(filename, 'a'); % 'a' para agregar sin sobrescribir
     if fid == -1
         error('No se pudo abrir el archivo.');
     end
-
-    j = 1;
-    while j<length(celda)
-        fprintf(fid, '%s,', celda{j});
-        datos = celda{j+1};
-        if isnumeric(datos)  % Si los datos son numéricos, conviértelos a texto
+    for j=1:length(celda)
+        datos = celda{j};
+        if isnumeric(datos) && length(datos)>1% Si los datos son numéricos, conviértelos a texto
+            fprintf(fid, '[');
             fprintf(fid, '%g,', datos(1:end-1)); % Escribir los valores separados por comas
-            fprintf(fid, '%g',datos(end));
+            fprintf(fid, '%g]',datos(end));
             fprintf(fid, ';'); % Escribir los valores separados por comas
-            
-        elseif ischar(datos) || isstring(datos) % Si es texto
-            fprintf(fid, '%s,', datos);
-            fprintf(fid, ';');
+        elseif isnumeric(datos) && length(datos)==1
+            fprintf(fid, '%g;',datos);
+
+        elseif ischar(datos) || isstring(datos)
+            fprintf(fid, '%s;',datos);
         else
             error('Formato de datos no soportado.');
         end
-        
-        j= j+2;
     end 
     fprintf(fid, '\n'); % Agregar salto de línea al final
-
-    fclose(fid);
+    fclose(fid)
 
 
 
@@ -509,8 +514,8 @@ function save_molecule_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-st=handles.FileName;
-ix=find(st=='.');
+st=string(handles.FileName);
+%ix=find(st=='.');
 %num=str2double(st(1:ix-1));
 
 
@@ -526,7 +531,7 @@ normalized_volumes=handles.vol_sort_array./total_vol;
 nucleotides=normalized_volumes.*N_nucleotides;
 cumu_nucleotides=round(cumsum(nucleotides),0);
 probabilities=zeros(1,N_nucleotides);
-handles.infor
+
 if handles.infor(1)=="Domain" 
         probabilities(nucleotides_arr<=cumu_nucleotides(1))=1;
 end 
@@ -537,12 +542,13 @@ for i=2:length(cumu_nucleotides)
 end 
 
 %------------------------------------------------------------------------
+stringResult = "[" + strjoin(handles.infor, ",") + "]";
 
-total_cell = {st, handles.vol_sort_array,'info', handles.infor,'thresholds',handles.thres_array,'background noise', handles.Noise};
+total_cell = {st, handles.vol_sort_array, stringResult,handles.thres_array, handles.Noise};
+SaveLine('Results.csv', total_cell)
 
-guardarLinea('CumuSums.csv',{st cumu_nucleotides})
-guardarLinea('Results.csv', total_cell)
-guardarLinea('Probabilities.csv',{st probabilities})
+SaveLine('CumuSums.csv',{st cumu_nucleotides})
+SaveLine('Probabilities.csv',{st probabilities})
 
 guidata(hObject, handles);
 
@@ -1192,6 +1198,7 @@ hold off;
 
 skel_length=0;
 skeleton_aux=handles.skeleton;
+
 while length(B_loc) >= 2
     branches_length=[];
     matrix_resta=false(size(handles.skeleton));
@@ -1321,9 +1328,8 @@ function saveSkel_Callback(hObject, ~, handles)
 
 st=handles.FileName;
 
-
-total_cell ={st,handles.mol_thres,'Skeleton Length',handles.skeleton_lenght,'Main Chain Length',handles.mc,'MajorAxis Lenght',handles.MajorAxisLength,'Smallest diameter',handles.diametro_minimo,'MinFeret',handles.MinFeret,'MaxFeret',handles.MaxFeret};
-guardarLinea('Results_Skels.csv',total_cell)
+total_cell ={st,handles.mol_thres,handles.skeleton_lenght,handles.mc,handles.MajorAxisLength,handles.diametro_minimo,handles.MinFeret,handles.MaxFeret};
+SaveLine('Results_Skels.csv',total_cell)
 guidata(hObject, handles);
 
 % --- Executes on button press in checkbox2.
