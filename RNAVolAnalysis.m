@@ -292,9 +292,8 @@ guidata(hObject, handles);
 % --- Executes on button press in run.
 function run_Callback(hObject, ~, handles)
 
-[linkers,objects]=main_run(handles);
-handles.linkers=linkers;
-handles.objects=objects;
+[handles.linkers,handles.objects,handles.mc,handles.skeleton_length,handles.dob,handles.MinAxisLength,handles.MajorAxisLength,handles.MaxFeret,handles.MinFeret]=main_run(handles);
+
 [handles.Volume,handles.Noise,handles.labelMatrix]=extend_molecule(handles);
 
 
@@ -509,7 +508,7 @@ function save_molecule_Callback(hObject, ~, handles)
 st=string(handles.FileName);
 
 
-total_cell ={st,handles.mol_thres,handles.skeleton_lenght,handles.mc,handles.MajorAxisLength,handles.diametro_minimo,handles.MinFeret,handles.MaxFeret};
+total_cell ={st,handles.mol_thres,handles.skeleton_length,handles.mc,handles.MajorAxisLength,handles.MinAxisLength,handles.MinFeret,handles.MaxFeret};
 SaveLine('Results_Skels.csv',total_cell)
 guidata(hObject, handles);
 
@@ -654,10 +653,10 @@ cla reset
 imshow(RNA3);
 
 
-function [linkers,objects]=main_run(handles)
+function [linkers,objects,mc,skeleton_length,dob,MinAxisLength,MajorAxisLength,MaxFeret,MinFeret]=main_run(handles)
 
 handles.thres_array=sort(handles.thres_array);
-skeletonize(handles)
+[mc,skeleton_length,dob,MinAxisLength,MajorAxisLength,MaxFeret,MinFeret] = skeletonize(handles);
 n_steps=length(handles.thres_array);
 linker_map=zeros(size(handles.RNA2));
 object_map=zeros(size(handles.RNA2));
@@ -1064,28 +1063,28 @@ guidata(hObject, handles);
 
 
 
-function skeletonize(handles)
+function [mc,skeleton_length,dob,MinAxisLength,MajorAxisLength,MaxFeret,MinFeret]=skeletonize(handles)
 
 [m,n]=size(handles.RNA2);
-handles.skeleton_image=ones(m,n,3);
+skeleton_image=ones(m,n,3);
 
-handles.RNA_molecule=imclearborder(handles.RNA_molecule);
+RNA_molecule=imclearborder(handles.RNA_molecule);
 
-handles.skeleton = bwmorph(handles.RNA_molecule,'thin', Inf);
-handles.skeleton = bwareaopen( handles.skeleton , handles.Remove_Smaller_Than );
+skeleton = bwmorph(RNA_molecule,'thin', Inf);
+skeleton = bwareaopen(skeleton , handles.Remove_Smaller_Than);
 
 
 se = strel('disk',5);
-handles.skeleton_dilated = imdilate(handles.skeleton,se);
-[x,y]=find(handles.skeleton_dilated);
+skeleton_dilated = imdilate(skeleton,se);
+[x,y]=find(skeleton_dilated);
 for i=1:length(x)
-    handles.skeleton_image(x(i),y(i),1)=0;
-    handles.skeleton_image(x(i),y(i),2)=0;
-    handles.skeleton_image(x(i),y(i),3)=0;
+    skeleton_image(x(i),y(i),1)=0;
+    skeleton_image(x(i),y(i),2)=0;
+    skeleton_image(x(i),y(i),3)=0;
 end 
 axes(handles.axes6);
 cla reset
-imshow(handles.skeleton_image);
+imshow(skeleton_image);
 
 if isempty(handles.RNAjpg) == 0 
     axes(handles.axes8)
@@ -1099,19 +1098,19 @@ else
 end 
 axes(handles.axes8);
 hold on
-[x,y]=find(handles.skeleton_image == 0);
+[x,y]=find(skeleton_image == 0);
 scatter(y,x,'filled','SizeData',1,'MarkerFaceColor','k');
-handles.RNAskel_tosave=handles.skeleton_image;
+handles.RNAskel_tosave=skeleton_image;
 
 
 
-ep = bwmorph(handles.skeleton,'endpoints');
+ep = bwmorph(skeleton,'endpoints');
 %Positions of the end-points
 [r,c] = find(ep); %Position (r:row, c:colum)
 ends_loc = find(ep); %Position (index)
 endpoints=[r,c,ends_loc];
 
-bp = bwmorph(handles.skeleton,'branchpoints');
+bp = bwmorph(skeleton,'branchpoints');
 [r1,c1] = find(bp); 
 B_loc = find(bp);
 branchpoints=[r1,c1,B_loc];
@@ -1122,7 +1121,7 @@ dd=size(endpoints);
 
 %Here we find the main chain distance 
 for k = 1:dd(1)
-    D = bwdistgeodesic(handles.skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean'); 
+    D = bwdistgeodesic(skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean'); 
     D(isinf(D)) = nan;
     endtoend(k) = max(D(endpoints(:,3))); 
     ind = D == endtoend(k); %Keeps the position of the endpoint to which [c(k),r(k)] distance is max
@@ -1139,32 +1138,32 @@ for k = 1:dd(1)
     end
 end
 
-D1 = bwdistgeodesic(handles.skeleton, ep1(2), ep1(1), 'quasi-euclidean'); %endpoint 1
-D2 = bwdistgeodesic(handles.skeleton, ep2(2), ep2(1), 'quasi-euclidean'); %endpoint 2
+D1 = bwdistgeodesic(skeleton, ep1(2), ep1(1), 'quasi-euclidean'); %endpoint 1
+D2 = bwdistgeodesic(skeleton, ep2(2), ep2(1), 'quasi-euclidean'); %endpoint 2
 D = D1 + D2;
 D = round(D * 8) / 8;
 D(isnan(D)) = inf;
 
-mc_lenght=max_length.*handles.factor;
+mc_length=max_length.*handles.factor;
 
 
-%Now we represent in the image the branches lenght (in red)
+%Now we represent in the image the branches length (in red)
 
 if isempty(B_loc) == true
-    handles.mc= mc_lenght;
-    handles.skeleton_lenght = mc_lenght;
-    handles.dob = 1;
+    mc= mc_length;
+    skeleton_length = mc_length;
+    dob = 1;
     s=regionprops(handles.skeleton,'centroid');
     centroids=s.Centroid;
     axes(handles.axes6);
     hold on;
     plot(centroids(1),centroids(2),'b*')
-    text(centroids(1),centroids(2), sprintf('%.2f', mc_lenght), ...
+    text(centroids(1),centroids(2), sprintf('%.2f', mc_length), ...
         'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
 else
     for k = 1:numel(r)
-        matrix_resta=false(size(handles.skeleton));
-        D = bwdistgeodesic(handles.skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
+        matrix_resta=false(size(skeleton));
+        D = bwdistgeodesic(skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
         distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
                                         %the shortest parth is the length of the branch.
                                         %Takes into account the starting and ending branch of the main chain      
@@ -1181,14 +1180,14 @@ else
 
 hold off;
 
-%Now we calculate the lenght of the skeleton
+%Now we calculate the length of the skeleton
 
 skel_length=0;
-skeleton_aux=handles.skeleton;
+skeleton_aux=skeleton;
 
 while length(B_loc) >= 2
     branches_length=[];
-    matrix_resta=false(size(handles.skeleton));
+    matrix_resta=false(size(skeleton));
     for k = 1:numel(r)
             D = bwdistgeodesic(skeleton_aux,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
             distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
@@ -1244,25 +1243,25 @@ else %If no bp remains, we add the last segment:
     end 
 end 
 
-%Final values of skeleton lenghts:
-handles.mc= mc_lenght;
-handles.skeleton_lenght = skel_length;
-handles.dob = handles.skeleton_lenght/mc_lenght;
+%Final values of skeleton lengths:
+mc= mc_length;
+skeleton_length = skel_length;
+dob = skeleton_length/mc_length;
 
 % We represent in the image the remaining values (segment between
 % branchpoints mainly)
 
-bp = bwmorph(handles.skeleton,'branchpoints');
+bp = bwmorph(skeleton,'branchpoints');
 bp_locs=find(bp);
 
-[~,mask]=find_8_conn2(bp_locs,handles.skeleton,1);
+[~,mask]=find_8_conn2(bp_locs,skeleton,1);
 
 %Now the skeleton is divided in segments 
 I_segmented = core_molecule & ~mask;
 [L, num] = bwlabel(I_segmented);
 
 for k = 1:num
-    matrix_resta=false(size(handles.skeleton));
+    matrix_resta=false(size(skeleton));
     branch_mask = L == k;
     ep = bwmorph(branch_mask,'endpoints');
     [r,c]=find(ep);
@@ -1283,7 +1282,7 @@ end
 hold off
 end 
 
-etiquetas = bwlabel(handles.RNA_molecule);
+etiquetas = bwlabel(RNA_molecule);
 props = regionprops(etiquetas, 'Area');
 [~, indice_max_area] = max([props.Area]);
 RNA3_main = (etiquetas == indice_max_area);
@@ -1294,11 +1293,14 @@ props = regionprops(RNA3_main, 'BoundingBox');
 % Calcular el diámetro mínimo basado en el cuadro delimitador mínimo
 ancho = props.BoundingBox(3);
 alto = props.BoundingBox(4);
-handles.diametro_minimo = sqrt(ancho^2 + alto^2)*handles.factor;
 
-handles.MajorAxisLength =props1.MajorAxisLength*handles.factor;
-handles.MaxFeret= props1.MaxFeretDiameter*handles.factor;
-handles.MinFeret= props1.MinFeretDiameter*handles.factor;
+MinAxisLength = sqrt(ancho^2 + alto^2)*handles.factor;
+
+MajorAxisLength =props1.MajorAxisLength*handles.factor;
+MaxFeret= props1.MaxFeretDiameter*handles.factor;
+MinFeret= props1.MinFeretDiameter*handles.factor;
+
+
 
 
 % --- Executes on button press in checkbox2.
