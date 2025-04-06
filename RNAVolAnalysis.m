@@ -1068,6 +1068,8 @@ skeleton_image=ones(m,n,3);
 
 RNA_molecule=imclearborder(handles.RNA_molecule);
 
+
+
 skeleton = bwmorph(RNA_molecule,'thin', Inf);
 skeleton = bwareaopen(skeleton , handles.Remove_Smaller_Than);
 
@@ -1151,7 +1153,7 @@ if isempty(B_loc) == true
     mc= mc_length;
     skeleton_length = mc_length;
     dob = 1;
-    s=regionprops(handles.skeleton,'centroid');
+    s=regionprops(skeleton,'centroid');
     centroids=s.Centroid;
     axes(handles.axes6);
     hold on;
