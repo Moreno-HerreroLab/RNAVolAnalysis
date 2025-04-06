@@ -77,7 +77,7 @@ delete *.csv
 headerSkels = {'File Name','Threshold','Skeleton Length','Main Chain Length','MajorAxis Lenght','Smallest diameter','MinFeret','MaxFeret'};
 SaveLine('Results_Skels.csv',headerSkels)
 
-headerMolecule = {'File Name', 'Volumes', 'info', 'thresholds','background noise'};
+headerMolecule = {'File Name', 'Volumes', 'info', 'thresholds','background noise','Cumulative Sums','Probabilities'};
 SaveLine('Results.csv', headerMolecule)
 
 % Choose default command line output for RNAVolAnalysis
@@ -537,11 +537,9 @@ end
 %------------------------------------------------------------------------
 stringResult = "[" + strjoin(handles.infor, ",") + "]";
 
-total_cell = {st, handles.vol_sort_array, stringResult,handles.thres_array, handles.Noise};
+total_cell = {st, handles.vol_sort_array, stringResult,handles.thres_array, handles.Noise,cumu_nucleotides,probabilities};
 SaveLine('Results.csv', total_cell)
 
-SaveLine('CumuSums.csv',{st cumu_nucleotides})
-SaveLine('Probabilities.csv',{st probabilities})
 
 guidata(hObject, handles);
 
