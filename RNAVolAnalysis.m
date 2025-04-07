@@ -1147,20 +1147,20 @@ D(isnan(D)) = inf;
 mc_length=max_length.*handles.factor;
 
 
-%Now we represent in the image the branches length (in red)
+
 
 if isempty(B_loc) == true
-    mc= mc_length;
-    skeleton_length = mc_length;
-    dob = 1;
     s=regionprops(skeleton,'centroid');
     centroids=s.Centroid;
     axes(handles.axes6);
     hold on;
-    plot(centroids(1),centroids(2),'b*')
+    plot(centroids(1),centroids(2),'r*')
     text(centroids(1),centroids(2), sprintf('%.2f', mc_length), ...
         'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
-else
+    skel_length= mc_length;
+
+elseif length(B_loc)==1
+
     for k = 1:numel(r)
         matrix_resta=false(size(skeleton));
         D = bwdistgeodesic(skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
@@ -1171,59 +1171,56 @@ else
         matrix_resta(D < distanceToBranchPt)=true;
         s=regionprops(matrix_resta,'centroid');
         centroids=s.Centroid;
+        %Now we represent in the image the branches length (in red)
         axes(handles.axes6);
         hold on;
-        plot(centroids(1),centroids(2),'b*')
+        plot(centroids(1),centroids(2),'r*')
         text(centroids(1),centroids(2), sprintf('%.2f', branches_length(k)), ...
             'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
     end 
+    skel_length= sum(branches_length);
+    hold off;
 
-hold off;
-
-%Now we calculate the length of the skeleton
-
-skel_length=0;
-skeleton_aux=skeleton;
-
-while length(B_loc) >= 2
-    branches_length=[];
-    matrix_resta=false(size(skeleton));
+elseif length(B_loc)>1
     for k = 1:numel(r)
-            D = bwdistgeodesic(skeleton_aux,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
-            distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
-                                            % the shortest parth is the length of the branch.
-                                            % Takes into account the starting and ending branch of the main chain                  
-            branches_length(k) = distanceToBranchPt.*handles.factor;
-            matrix_resta(D < distanceToBranchPt)=true; %Matrix_resta contains all the branches
-    end 
-    skeleton_aux=skeleton_aux - matrix_resta; %Skeleton_aux contains a new skeleton (original - branches)
-    skeleton_aux=bwmorph(skeleton_aux,'thin');
-
-    %Calculate new ep and bp of the new skeleton 
-    ep = bwmorph(skeleton_aux,'endpoints');
-    [r,c] = find(ep); %Position (r:row, c:colum)
-    ends_loc = find(ep); %Position (index)
-    endpoints=[r,c,ends_loc];
-
-    bp = bwmorph(skeleton_aux,'branchpoints');
-    %[~,~]=find(bp);
-    B_loc = find(bp); %Update the value of B_loc (location of bp) - When number of bp is 1 or 0, the while loop ends
-    skel_length = skel_length + sum(branches_length);
-end 
-
-core_molecule = skeleton_aux;
-
-%2 cases: 1 bp remains, or no bp remains.
-if length(B_loc)==1 %If one bp remains, we erase branches until 0 bp remains:
-    while length(B_loc)==1
-        D = bwdistgeodesic(skeleton_aux,endpoints(1,2),endpoints(1,1),'quasi-euclidean');
+        matrix_resta=false(size(skeleton));
+        D = bwdistgeodesic(skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
         distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
-                                        % the shortest parth is the length of the branch.
-                                        % Takes into account the starting and ending branch of the main chain                  
-        matrix_resta(D < distanceToBranchPt)=true; %Matrix_resta contains one branches
-        skeleton_aux=skeleton_aux - matrix_resta; 
+                                        %the shortest parth is the length of the branch.
+                                        %Takes into account the starting and ending branch of the main chain      
+        branches_length(k) = distanceToBranchPt.*handles.factor;
+        matrix_resta(D < distanceToBranchPt)=true;
+        s=regionprops(matrix_resta,'centroid');
+        centroids=s.Centroid;
+        %Now we represent in the image the branches length (in red)
+        axes(handles.axes6);
+        hold on;
+        plot(centroids(1),centroids(2),'r*')
+        text(centroids(1),centroids(2), sprintf('%.2f', branches_length(k)), ...
+            'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
+    end 
+    hold off
+
+
+    %Now we calculate the length of the skeleton
+    
+    skel_length=0;
+    skeleton_aux=skeleton;
+    
+    while length(B_loc) >= 2
+        branches_length=[];
+        matrix_resta=false(size(skeleton));
+        for k = 1:numel(r)
+                D = bwdistgeodesic(skeleton_aux,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
+                distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
+                                                % the shortest parth is the length of the branch.
+                                                % Takes into account the starting and ending branch of the main chain                  
+                branches_length(k) = distanceToBranchPt.*handles.factor;
+                matrix_resta(D < distanceToBranchPt)=true; %Matrix_resta contains all the branches
+        end 
+        skeleton_aux=skeleton_aux - matrix_resta; %Skeleton_aux contains a new skeleton (original - branches)
         skeleton_aux=bwmorph(skeleton_aux,'thin');
-        skel_length = skel_length + distanceToBranchPt.*handles.factor;
+    
         %Calculate new ep and bp of the new skeleton 
         ep = bwmorph(skeleton_aux,'endpoints');
         [r,c] = find(ep); %Position (r:row, c:colum)
@@ -1231,56 +1228,84 @@ if length(B_loc)==1 %If one bp remains, we erase branches until 0 bp remains:
         endpoints=[r,c,ends_loc];
     
         bp = bwmorph(skeleton_aux,'branchpoints');
+        %[~,~]=find(bp);
         B_loc = find(bp); %Update the value of B_loc (location of bp) - When number of bp is 1 or 0, the while loop ends
+        skel_length = skel_length + sum(branches_length);
     end 
-else %If no bp remains, we add the last segment:
-    D = bwdistgeodesic(skeleton_aux,endpoints(1,2),endpoints(1,1),'quasi-euclidean');
-    D(D==0)=inf;
-    distanceToBranchPt=min(D(ends_loc));
-    matrix_resta(D < distanceToBranchPt)=true;
-    if distanceToBranchPt ~= inf
-        skel_length = skel_length + distanceToBranchPt.*handles.factor;
+    
+    core_molecule = skeleton_aux;
+    
+    %2 cases: 1 bp remains, or no bp remains.
+    if length(B_loc)==1 %If one bp remains, we erase branches until 0 bp remains:
+        while length(B_loc)==1
+            D = bwdistgeodesic(skeleton_aux,endpoints(1,2),endpoints(1,1),'quasi-euclidean');
+            distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
+                                            % the shortest parth is the length of the branch.
+                                            % Takes into account the starting and ending branch of the main chain                  
+            matrix_resta(D < distanceToBranchPt)=true; %Matrix_resta contains one branches
+            skeleton_aux=skeleton_aux - matrix_resta; 
+            skeleton_aux=bwmorph(skeleton_aux,'thin');
+            skel_length = skel_length + distanceToBranchPt.*handles.factor;
+            %Calculate new ep and bp of the new skeleton 
+            ep = bwmorph(skeleton_aux,'endpoints');
+            [r,c] = find(ep); %Position (r:row, c:colum)
+            ends_loc = find(ep); %Position (index)
+            endpoints=[r,c,ends_loc];
+        
+            bp = bwmorph(skeleton_aux,'branchpoints');
+            B_loc = find(bp); %Update the value of B_loc (location of bp) - When number of bp is 1 or 0, the while loop ends
+        end 
     end 
+    if  isempty(B_loc) == true %If no bp remains, we add the last segment:
+        D = bwdistgeodesic(skeleton_aux,endpoints(1,2),endpoints(1,1),'quasi-euclidean');
+        D(D==0)=inf;
+        distanceToBranchPt=min(D(ends_loc));
+        if distanceToBranchPt ~= inf
+            skel_length = skel_length + distanceToBranchPt.*handles.factor;
+        end 
+    end 
+
+    
+    % We represent in the image the remaining values (segment between
+    % branchpoints mainly)
+    
+    bp = bwmorph(skeleton,'branchpoints');
+    bp_locs=find(bp);
+    
+    [~,mask]=find_8_conn2(bp_locs,skeleton,1);
+    
+    %Now the skeleton is divided in segments 
+    I_segmented = core_molecule & ~mask;
+    [L, num] = bwlabel(I_segmented);
+    
+    for k = 1:num
+        matrix_resta=false(size(skeleton));
+        branch_mask = L == k;
+        ep = bwmorph(branch_mask,'endpoints');
+        [r,c]=find(ep);
+        ends_loc = find(ep);
+        %Find the distance from every point in the branch to the nearest endpoint
+        D = bwdistgeodesic(branch_mask,c(1) ,r(1), 'quasi-euclidean');
+        distance = max(D(ends_loc));  % Max distance will be the length of the branch
+    
+        matrix_resta(D < distance )=true;
+        s=regionprops(matrix_resta,'centroid');
+        centroids=s.Centroid;
+        axes(handles.axes6);
+        hold on;
+        plot(centroids(1),centroids(2),'b*')
+        text(centroids(1),centroids(2), sprintf('%.2f', distance.*handles.factor), ...
+            'Color', 'blue', 'FontSize', 12, 'FontWeight', 'bold');
+    end
+    hold off
+    
+    %Final values of skeleton lengths:
+
 end 
 
-%Final values of skeleton lengths:
 mc= mc_length;
 skeleton_length = skel_length;
 dob = skeleton_length/mc_length;
-
-% We represent in the image the remaining values (segment between
-% branchpoints mainly)
-
-bp = bwmorph(skeleton,'branchpoints');
-bp_locs=find(bp);
-
-[~,mask]=find_8_conn2(bp_locs,skeleton,1);
-
-%Now the skeleton is divided in segments 
-I_segmented = core_molecule & ~mask;
-[L, num] = bwlabel(I_segmented);
-
-for k = 1:num
-    matrix_resta=false(size(skeleton));
-    branch_mask = L == k;
-    ep = bwmorph(branch_mask,'endpoints');
-    [r,c]=find(ep);
-    ends_loc = find(ep);
-    %Find the distance from every point in the branch to the nearest endpoint
-    D = bwdistgeodesic(branch_mask,c(1) ,r(1), 'quasi-euclidean');
-    distance = max(D(ends_loc));  % Max distance will be the length of the branch
-
-    matrix_resta(D < distance )=true;
-    s=regionprops(matrix_resta,'centroid');
-    centroids=s.Centroid;
-    axes(handles.axes6);
-    hold on;
-    plot(centroids(1),centroids(2),'b*')
-    text(centroids(1),centroids(2), sprintf('%.2f', distance.*handles.factor), ...
-        'Color', 'blue', 'FontSize', 12, 'FontWeight', 'bold');
-end
-hold off
-end 
 
 etiquetas = bwlabel(RNA_molecule);
 props = regionprops(etiquetas, 'Area');
