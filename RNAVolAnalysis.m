@@ -296,27 +296,27 @@ function run_Callback(hObject, ~, handles)
 
 [handles.Volume,handles.Noise,handles.labelMatrix]=extend_molecule(handles);
 
-
-cell1={handles.Volume.vol};
-cell2={handles.Volume.info};
-handles.TAB=[cell1;cell2];
-
-set(handles.uitable1,'Data',handles.TAB')
-
-
-handles.RNA_profile=zeros(size(handles.RNA2));
-
-
-if isempty(handles.RNAjpg) == 0 
-    axes(handles.axes4)
-    cla reset
-    imshow(handles.RNAjpg)
-
-else
-    axes(handles.axes4)
-    cla reset
-    imshow(handles.RNA)
-
+if isempty(handles.Volume) == false
+    cell1={handles.Volume.vol};
+    cell2={handles.Volume.info};
+    handles.TAB=[cell1;cell2];
+    
+    set(handles.uitable1,'Data',handles.TAB')
+    
+    
+    handles.RNA_profile=zeros(size(handles.RNA2));
+    
+    
+    if isempty(handles.RNAjpg) == 0 
+        axes(handles.axes4)
+        cla reset
+        imshow(handles.RNAjpg)
+    
+    else
+        axes(handles.axes4)
+        cla reset
+        imshow(handles.RNA)
+    end
 end 
 
 guidata(hObject, handles);
@@ -515,31 +515,31 @@ guidata(hObject, handles);
 
 %First we calculate wich nucleotides are in a domain:
 %------------------------------------------------------------------------
-
-N_nucleotides=handles.N_nucleotides;
-
-nucleotides_arr=linspace(1,N_nucleotides,N_nucleotides); %array with nucleotides
-total_vol=sum(handles.vol_sort_array);
-normalized_volumes=handles.vol_sort_array./total_vol;
-nucleotides=normalized_volumes.*N_nucleotides;
-cumu_nucleotides=round(cumsum(nucleotides),0);
-probabilities=zeros(1,N_nucleotides);
-
-if handles.infor(1)=="Domain" 
-        probabilities(nucleotides_arr<=cumu_nucleotides(1))=1;
-end 
-for i=2:length(cumu_nucleotides)
-    if handles.infor(i)=="Domain" 
-        probabilities(nucleotides_arr<=cumu_nucleotides(i) & nucleotides_arr>cumu_nucleotides(i-1))=1;
+if isempty(handles.vol_sort_array) == false
+    N_nucleotides=handles.N_nucleotides;
+    
+    nucleotides_arr=linspace(1,N_nucleotides,N_nucleotides); %array with nucleotides
+    total_vol=sum(handles.vol_sort_array);
+    normalized_volumes=handles.vol_sort_array./total_vol;
+    nucleotides=normalized_volumes.*N_nucleotides;
+    cumu_nucleotides=round(cumsum(nucleotides),0);
+    probabilities=zeros(1,N_nucleotides);
+    
+    if handles.infor(1)=="Domain" 
+            probabilities(nucleotides_arr<=cumu_nucleotides(1))=1;
     end 
+    for i=2:length(cumu_nucleotides)
+        if handles.infor(i)=="Domain" 
+            probabilities(nucleotides_arr<=cumu_nucleotides(i) & nucleotides_arr>cumu_nucleotides(i-1))=1;
+        end 
+    end 
+    
+    %------------------------------------------------------------------------
+    stringResult = "[" + strjoin(handles.infor, ",") + "]";
+    
+    total_cell = {st, handles.vol_sort_array, stringResult,handles.thres_array, handles.Noise,cumu_nucleotides,probabilities};
+    SaveLine('Results.csv', total_cell)
 end 
-
-%------------------------------------------------------------------------
-stringResult = "[" + strjoin(handles.infor, ",") + "]";
-
-total_cell = {st, handles.vol_sort_array, stringResult,handles.thres_array, handles.Noise,cumu_nucleotides,probabilities};
-SaveLine('Results.csv', total_cell)
-
 
 guidata(hObject, handles);
 
