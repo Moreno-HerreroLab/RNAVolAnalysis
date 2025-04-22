@@ -367,7 +367,7 @@ aux=zeros(size(handles.RNA));
 aux(handles.labelMatrix == handles.row)=1;
 border=bwperim(aux);
 [xx,yy]=find(border);
-plot(yy,xx,'.k','MarkerSize',10);
+plot(yy,xx,'.k','MarkerSize',2);
 
 se = strel('disk',1);
 aux=zeros(size(handles.RNAjpg));
@@ -1628,7 +1628,7 @@ ancho = props.BoundingBox(3);
 alto = props.BoundingBox(4);
 diametro_minimo = sqrt(ancho^2 + alto^2);
 
-MajorAxisLength =props1.MajorAxisLength;
+MajorAxisLength =props1.MajorAxisLength; %Length (in pixels) of the major axis of the ellipse that has the same normalized second central moments as the region, returned as a scalar.
 MaxFeret= props1.MaxFeretDiameter;
 MinFeret= props1.MinFeretDiameter;
 
