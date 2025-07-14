@@ -676,54 +676,54 @@ for i=1:n_steps-1
     low=handles.thres_array(i);
     high=handles.thres_array(i+1);
     
-    %guardamos la lista de pixeles de cada isla con el thres alto
+    %Save pixel list with high threshold
+
     maskhigh=zeros(size(handles.RNA2));
     maskhigh(handles.RNA2 > high) = 1; 
-    %maskhigh=imclearborder(maskhigh);
     CC_high = bwconncomp(maskhigh);    
     idx_list_high = CC_high.PixelIdxList;
     
-    %guardamos la lista de pixeles de cada isla con el thres bajo     
+    %Save pixel list with low threshold  
     masklow=zeros(size(handles.RNA2));
     masklow(handles.RNA2 > low) = 1;
     masklow=imclearborder(masklow);
     CC_low = bwconncomp(masklow);   
     idx_list_low = CC_low.PixelIdxList;  
 
-    %comparamos cada lista de pixeles bajo con cada lista de pixeles en el thres
-    %alto. Es decir, cada isla de thres bajo tiene de opciones:
+    %Compare the two lists. Three options:
     
-    %A. no coincidir con ninguna isla del alto
-    %B. coincidir con una isla del alto
-    %C. coincidir con 2 o más islas del alto
+    %A. does not match any region in the high threshold
+    %B. matches one region in the high threshold
+    %C. matches two or more regions in the high threshold
     
-    %En los casos A y B no se hace nada,  en el caso C: guardamos la lista
-    %de pixeles de las regiones que van a unirse (thres alto) 
-    
+    %In cases A and B, do nothing. In case C: store the list
+    %of pixels from the regions that will be merged (high threshold)
+
     for k=1:length(idx_list_low)        
         object_n=idx_list_low{k};
         tf = [];
         for j=1:length(idx_list_high)
             object_n2=idx_list_high{j};
-            C = ismember(object_n,object_n2); %C va a ser un array con 1 en las posiciones que coincidan y 0 en las que no
-            %Si C es todo ceros: el objeto n no coincide con el n2
-            %Si C esta compuesto de ceros y unos: el objeto si coincide
-            is_new=find(C==1, 1); %Este vector estará vacío si las islas no coinciden, y no lo estará si las isla coinciden 
+            C = ismember(object_n,object_n2); 
+            %If C is all zeros: Object n does not match with n2
+            %If C is 0 and 1s: they match
+            is_new=find(C==1, 1); %This vector will be empty if the object dont mtch, and not empty if they match
             if isempty(is_new)==1
-                tf = [tf, 0]; %0 indica que el objeto no coincide 
+                tf = [tf, 0]; %0: dont match
             else
-                tf=[tf, 1]; %1 indica que el objeto coincide 
+                tf=[tf, 1]; %1: match
             end 
         end 
-        %Si el tf hay mas de un 1: Caso C
-        %Si en el tf no hay ningún 1: caso A
-        %Si en el tf solo hay un 1: Caso B
+        %if more than one 1 in tf: Case C
+        %if no 1s in tf: case A
+        %if just one 1 in tf: Case B
+
         val=sum(tf);
         if val >1
-            %guardamos las islas que se han unido
+            %save the object that joined
              prev_objects_idx=find(tf==1);
              
-            %objetos se han unido en uno solo
+            %Objects joined in one
              for  indexes=1:length(prev_objects_idx)
              object_unido_n_idxs=idx_list_high{prev_objects_idx(indexes)};
              object_map_2=zeros(size(handles.RNA2));
@@ -740,7 +740,7 @@ for i=1:n_steps-1
             whole(whole>0)=1;
             linkers=whole-maskhigh;
 
-            %Nos quedamos solo con los branches importantes
+            %we keep the main branches
             %----------------------------------------------------------------------------------
             CLink=bwconncomp(linkers);        
             linkers_def=zeros(size(handles.RNA2));
@@ -755,7 +755,7 @@ for i=1:n_steps-1
                     [~,mask]=find_8_conn2(ep_loc(ep_i),handles.RNA2,0);
                     aux=mask-maskhigh;
                     sur=find(aux==1);
-                    if length(sur)<8 %este ep toca alguna region
+                    if length(sur)<8 %This ep touches a region
                         count=count+1;
                     end
                 end
@@ -1498,161 +1498,6 @@ positions = find(whole_border);
     end 
 end 
     link_domain2=link;
-
-
-
-% --- Executes on button press in browse_threshods.
-function browse_threshods_Callback(hObject, ~, handles)
-% hObject    handle to browse_threshods (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-[filename, filepath] = uigetfile('*.txt', 'Selecciona un archivo');
-
-% Combinar el nombre del archivo y la ubicación para obtener la ruta completa
-nombre_archivo = fullfile(filepath, filename);
-% Abrir el archivo para lectura
-fid = fopen(nombre_archivo, 'r');
-
-% Inicializar el vector para almacenar los valores de la tercera columna
-thresholds = [];
-file_ids=[];
-% Leer el archivo línea por línea
-while ~feof(fid)
-    % Leer una línea del archivo
-    linea = fgetl(fid);
-    
-    % Dividir la línea en partes utilizando ';' como delimitador
-    partes = strsplit(linea, ';');
-    
-    % Obtener el valor de la tercera columna y convertirlo a número
-    valor = str2double(partes{3});
-
-    file_id = str2double(partes{1});
-    
-    % Agregar el valor al vector thresholds
-    thresholds = [thresholds; valor];
-    file_ids=[file_ids;file_id];
-end
-
-% Cerrar el archivo
-fclose(fid);
-
-handles.All_Thresholds=thresholds;
-handles.Files_Ids=file_ids;
-
-
-guidata(hObject, handles);
-
-
-% --- Executes on button press in Automatic_Load.
-function Automatic_Load_Callback(hObject, ~, handles)
-% hObject    handle to Automatic_Load (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-handles.order=0;
-handles.data_directory=get(handles.data_path,'String');
-CurrentFolder=pwd;
-handles.fileindex=1;
-handles.fileindex_load=1;
-cd(handles.data_directory);
-
-handles.AllFileNames=dir('*.txt');
-cd(CurrentFolder)
-handles.chckflder=length(handles.AllFileNames);
-
-if handles.chckflder == 0
-    msgbox('The provided input folder is empty.','ERROR', 'error')
-else 
-    MajorAxisLengths= [];
-    diametros_minimos =[];
-    MaxFeret_all=[];
-    MinFeret_all=[];
-    for h=1:length(handles.All_Thresholds)
-    [handles.RNA, handles.FileName, handles.factor]= func_load(handles.data_directory,handles.AllFileNames, handles.fileindex_load,handles.resize_factor);
-    st=handles.FileName;
-    ix=find(st=='.');
-    num=str2double(st(1:ix-1));
-    while num ~= handles.Files_Ids(handles.fileindex)
-        handles.fileindex_load= handles.fileindex_load+1;
-        [handles.RNA, handles.FileName,handles.factor]= func_load(handles.data_directory,handles.AllFileNames, handles.fileindex_load,handles.resize_factor);
-        st=handles.FileName;
-        ix=find(st=='.');
-        num=str2double(st(1:ix-1));
-    end 
-    [MajorAxisLength,diametro_minimo,MaxFeret,MinFeret,skeleton_matrix]=automatic_run(handles.RNA,handles.fileindex,handles.All_Thresholds,handles.axes1); 
-    
-    axes(handles.axes1)
-    imshow(skeleton_matrix)
-    pause
-    name=[st(1:ix-1),'.txt'];
-    writematrix(skeleton_matrix,  name,'Delimiter','tab');
-    MajorAxisLengths = [MajorAxisLengths;MajorAxisLength];
-    diametros_minimos =[diametros_minimos; diametro_minimo];
-    MaxFeret_all=[MaxFeret_all;MaxFeret];
-    MinFeret_all=[MinFeret_all;MinFeret];
-    %pause
-    handles.fileindex = handles.fileindex+1;
-    handles.fileindex_load = handles.fileindex_load+1;
-    handles.order=0;
-    end 
-end 
-% 
-% cell2={MajorAxisLengths};
-% cell3={diametros_minimos};
-% 
-% handles.Results_Props=[cell2;cell3];
-% writecell(handles.Results_Props,'EnclosingCircleData.dat');
-
-fid = fopen('Results_Props.txt', 'w');
-fprintf(fid, 'MajorAxisLengths\tdiametro_minimo\tMaxFeret\tMinFeret\n'); % Encabezado
-fprintf(fid, '%f\t%f\t%f\t%f\n', [MajorAxisLengths, diametros_minimos,MaxFeret_all,MinFeret_all].'); % Datos
-fclose(fid);
-
-guidata(hObject, handles);
-
-
-function [MajorAxisLength,diametro_minimo,MaxFeret,MinFeret,skeleton_matrix] = automatic_run (RNA,fileindex,All_Thresholds,axess)
-
-handles.RNA2=imgaussfilt(RNA,5);
-RNA3=handles.RNA2;
-mask=RNA3>All_Thresholds(fileindex);
-RNA3(mask==0)=0;
-
-etiquetas = bwlabel(RNA3);
-
-% Calcular el área de cada región etiquetada
-props = regionprops(etiquetas, 'Area');
-% Encontrar la etiqueta de la región con el área más grande
-[~, indice_max_area] = max([props.Area]);
-
-% Crear una nueva imagen binaria con solo la región más grande
-RNA3_main = (etiquetas == indice_max_area);
-% 
-% axes(axess);
-% cla reset
-% imshow(RNA3_main);
-
-props1= regionprops(RNA3_main, 'MajorAxisLength',"MaxFeretProperties", "MinFeretProperties");
-props = regionprops(RNA3_main, 'BoundingBox');
-
-% Calcular el diámetro mínimo basado en el cuadro delimitador mínimo
-ancho = props.BoundingBox(3);
-alto = props.BoundingBox(4);
-diametro_minimo = sqrt(ancho^2 + alto^2);
-
-MajorAxisLength =props1.MajorAxisLength; %Length (in pixels) of the major axis of the ellipse that has the same normalized second central moments as the region, returned as a scalar.
-MaxFeret= props1.MaxFeretDiameter;
-MinFeret= props1.MinFeretDiameter;
-
-
-% ahora calcular skeleton e importar matix con el numero.txt
-
-skeleton_matrix = bwmorph(RNA3_main,'thin', Inf);
-
 
 
 
