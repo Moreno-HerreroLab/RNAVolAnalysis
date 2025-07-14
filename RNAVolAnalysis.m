@@ -131,7 +131,14 @@ handles.order=0;
 handles.data_directory=get(handles.data_path,'String');
 CurrentFolder=pwd;
 handles.fileindex=1;
-cd(handles.data_directory);
+
+if exist(handles.data_directory, 'dir')
+    cd(handles.data_directory);
+else
+    errordlg(['Directory not found:', newline, handles.data_directory], 'Error');
+    return;
+end
+%cd(handles.data_directory);
 
 handles.AllFileNames=dir('*.txt');
 handles.JPGFileNames=dir('*.jpg');
@@ -980,15 +987,17 @@ function Add_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-
 vol1=handles.Volume(handles.row).vol;
 handles.tot_sum=handles.tot_sum + vol1;
 handles.NewReg(handles.labelMatrix==handles.row)=1;
 
 handles.Volume(handles.row).vol=0;
 handles.labelMatrix(handles.labelMatrix==handles.row)=0;
-
 guidata(hObject, handles);
+guidata(hObject, handles);
+
+
+
 
 % --- Executes on button press in Equal.
 function Equal_Callback(hObject, ~, handles)
@@ -1052,6 +1061,9 @@ function inizialize_sum_Callback(hObject, ~, handles)
 % hObject    handle to inizialize_sum (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+h = msgbox('Click in a region in  the "Volume" list, and then click the "+" button. Repeat with all regions you want to join. Then, click the "Finish joining" button ', 'Info');
+uiwait(h);
 
 handles.Volume2=[];
 handles.tot_sum=0;
@@ -1129,17 +1141,21 @@ for k = 1:dd(1)
     index=find(ind);
     if endtoend(k) > max_length && (endtoend(k) ~= inf)
         max_length = endtoend(k);
-        ep1(1) = endpoints(k,1); %one endpoint of the longest chain
-        ep1(2) = endpoints(k,2);
-        ep1(3) = endpoints(k,3);
-        ep2(1) = r2; %The second endpoint of the main chain 
-        ep2(2) = c2;
-        ep2(3) = index;
+        ep1a(1) = endpoints(k,1); %one endpoint of the longest chain
+        ep1a(2) = endpoints(k,2);
+        ep1a(3) = endpoints(k,3);
+        ep2a(1) = r2; %The second endpoint of the main chain 
+        ep2a(2) = c2;
+        ep2a(3) = index;
     end
 end
+if ~exist('ep1a', 'var')
+    errordlg('No molecule found. Probably "Remove smaller than" is too high.', 'Error');
+    return;
+end
 
-D1 = bwdistgeodesic(skeleton, ep1(2), ep1(1), 'quasi-euclidean'); %endpoint 1
-D2 = bwdistgeodesic(skeleton, ep2(2), ep2(1), 'quasi-euclidean'); %endpoint 2
+D1 = bwdistgeodesic(skeleton, ep1a(2), ep1a(1), 'quasi-euclidean'); %endpoint 1
+D2 = bwdistgeodesic(skeleton, ep2a(2), ep2a(1), 'quasi-euclidean'); %endpoint 2
 D = D1 + D2;
 D = round(D * 8) / 8;
 D(isnan(D)) = inf;
@@ -1689,5 +1705,7 @@ function N_nucleotides_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
 
 
