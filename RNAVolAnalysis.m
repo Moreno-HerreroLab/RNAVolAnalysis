@@ -457,6 +457,8 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+function region_color_edit_Callback(hObject, ~, ~)
+
 
 % --- Executes on button press in change_color_button.
 function change_color_button_Callback(hObject, ~, handles)
@@ -640,6 +642,7 @@ end
 fclose(fid1);
 newImage = flip(mat,1);
 RNA1 = flip(newImage,2);
+%RNA1 = flip(mat,1);
 
 function RNA3=apply_threshold(handles)
 

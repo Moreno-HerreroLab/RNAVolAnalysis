@@ -6,14 +6,16 @@ Here we provide an user guide for the RNAVolAnalysis GUI. This was specially dev
    - Launch MATLAB on your computer.
    - Clone or download the repository and navigate to its directory.
    - Open the MATLAB GUI by running the `RNAVolAnalysis.m` script.
-   - Browse and select the folder whre AFM image you want to analyse is stored. Click on the "Load" button. If there are many images, you can load them clicking the ‘next’ or ‘previous’ buttons.
+   - Browse and select the folder where AFM images you want to analyse is stored. Click on the "Load" button. If there are many images, you can load them clicking the ‘next’ or ‘previous’ buttons.
+   - Once you load the image, a message will pop up saying that you need to specify the number of nucleotides your RNA molecules has. This is used to calculate the volume/nuleotide conversion and for the domain profile output (CumuSums). Write the number of nucleotides in the red "nucleotides" section
 
 2. Apply Gaussian Smoothing:
    - Input the desired standard deviation parameter for the Gaussian filter.
    - Click "Apply" to smooth the image. This step enhances the image quality for analysis.
 
-3. Provide Image Size and Pixels:
-   - The GUI will display a default the dimensions of the loaded image in pixels and nanometers. Please enter the size in nanometer of your AFM image. Note that by default, all images will be redimensioned to 514x514 pixels. If you want other values, you will need to change in the code.
+3. Select ROI if your RNA y tagged
+   - In some case you could want to select manually the ROI, excluding parts of the images that may be touching your molecule, noise, or because your molecule is tagged and you would like to exclude the tag (in our case example, we want to exclude polyA tails). Mark The polyA tagged checkbox.
+   - Click the "Select ROI" button and select your area.
 
 4. Threshold Selection for Molecule:
    - Choose either "Auto-Threshold" or manually adjust the threshold using the slider or numerical input bar.
