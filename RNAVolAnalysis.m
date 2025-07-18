@@ -47,7 +47,7 @@ end
 % --- Executes during object creation, after setting all properties.
 function data_path_CreateFcn(hObject, ~, ~)
 
-data_directory = 'C:\Users\evatr\OneDrive - UAM\Documentos\MorenoHerreroLab\Projects_tesis\CONCR\CONCR data sorted\128 dataset\txt';
+data_directory = '\test_images';
 set(hObject,'String', num2str(data_directory));
 
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
