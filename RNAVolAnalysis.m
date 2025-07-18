@@ -47,7 +47,7 @@ end
 % --- Executes during object creation, after setting all properties.
 function data_path_CreateFcn(hObject, ~, ~)
 
-data_directory = 'C:\Users\evatr\OneDrive - UAM\Documentos\MorenoHerreroLab\Projects_tesis\CONCR\CONCR data sorted\128 dataset\txt';
+data_directory = '\test_images';
 set(hObject,'String', num2str(data_directory));
 
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -77,7 +77,7 @@ delete *.csv
 headerSkels = {'File Name','Threshold','Skeleton Length','Main Chain Length','MajorAxis Lenght','Smallest diameter','MinFeret','MaxFeret'};
 SaveLine('Results_Skels.csv',headerSkels)
 
-headerMolecule = {'File Name', 'Volumes', 'info', 'thresholds','background noise'};
+headerMolecule = {'File Name', 'Volumes', 'info', 'thresholds','background noise','Cumulative Sums','Probabilities'};
 SaveLine('Results.csv', headerMolecule)
 
 % Choose default command line output for RNAVolAnalysis
@@ -131,7 +131,14 @@ handles.order=0;
 handles.data_directory=get(handles.data_path,'String');
 CurrentFolder=pwd;
 handles.fileindex=1;
-cd(handles.data_directory);
+
+if exist(handles.data_directory, 'dir')
+    cd(handles.data_directory);
+else
+    errordlg(['Directory not found:', newline, handles.data_directory], 'Error');
+    return;
+end
+%cd(handles.data_directory);
 
 handles.AllFileNames=dir('*.txt');
 handles.JPGFileNames=dir('*.jpg');
@@ -292,32 +299,31 @@ guidata(hObject, handles);
 % --- Executes on button press in run.
 function run_Callback(hObject, ~, handles)
 
-[linkers,objects]=main_run(handles);
-handles.linkers=linkers;
-handles.objects=objects;
+[handles.linkers,handles.objects,handles.mc,handles.skeleton_length,handles.dob,handles.MinAxisLength,handles.MajorAxisLength,handles.MaxFeret,handles.MinFeret]=main_run(handles);
+
 [handles.Volume,handles.Noise,handles.labelMatrix]=extend_molecule(handles);
 
-
-cell1={handles.Volume.vol};
-cell2={handles.Volume.info};
-handles.TAB=[cell1;cell2];
-
-set(handles.uitable1,'Data',handles.TAB')
-
-
-handles.RNA_profile=zeros(size(handles.RNA2));
-
-
-if isempty(handles.RNAjpg) == 0 
-    axes(handles.axes4)
-    cla reset
-    imshow(handles.RNAjpg)
-
-else
-    axes(handles.axes4)
-    cla reset
-    imshow(handles.RNA)
-
+if isempty(handles.Volume) == false
+    cell1={handles.Volume.vol};
+    cell2={handles.Volume.info};
+    handles.TAB=[cell1;cell2];
+    
+    set(handles.uitable1,'Data',handles.TAB')
+    
+    
+    handles.RNA_profile=zeros(size(handles.RNA2));
+    
+    
+    if isempty(handles.RNAjpg) == 0 
+        axes(handles.axes4)
+        cla reset
+        imshow(handles.RNAjpg)
+    
+    else
+        axes(handles.axes4)
+        cla reset
+        imshow(handles.RNA)
+    end
 end 
 
 guidata(hObject, handles);
@@ -368,7 +374,7 @@ aux=zeros(size(handles.RNA));
 aux(handles.labelMatrix == handles.row)=1;
 border=bwperim(aux);
 [xx,yy]=find(border);
-plot(yy,xx,'.k','MarkerSize',10);
+plot(yy,xx,'.k','MarkerSize',2);
 
 se = strel('disk',1);
 aux=zeros(size(handles.RNAjpg));
@@ -451,6 +457,8 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+function region_color_edit_Callback(hObject, ~, ~)
+
 
 % --- Executes on button press in change_color_button.
 function change_color_button_Callback(hObject, ~, handles)
@@ -509,40 +517,38 @@ function save_molecule_Callback(hObject, ~, handles)
 st=string(handles.FileName);
 
 
-total_cell ={st,handles.mol_thres,handles.skeleton_lenght,handles.mc,handles.MajorAxisLength,handles.diametro_minimo,handles.MinFeret,handles.MaxFeret};
+total_cell ={st,handles.mol_thres,handles.skeleton_length,handles.mc,handles.MajorAxisLength,handles.MinAxisLength,handles.MinFeret,handles.MaxFeret};
 SaveLine('Results_Skels.csv',total_cell)
 guidata(hObject, handles);
 
 
 %First we calculate wich nucleotides are in a domain:
 %------------------------------------------------------------------------
-
-N_nucleotides=handles.N_nucleotides;
-
-nucleotides_arr=linspace(1,N_nucleotides,N_nucleotides); %array with nucleotides
-total_vol=sum(handles.vol_sort_array);
-normalized_volumes=handles.vol_sort_array./total_vol;
-nucleotides=normalized_volumes.*N_nucleotides;
-cumu_nucleotides=round(cumsum(nucleotides),0);
-probabilities=zeros(1,N_nucleotides);
-
-if handles.infor(1)=="Domain" 
-        probabilities(nucleotides_arr<=cumu_nucleotides(1))=1;
-end 
-for i=2:length(cumu_nucleotides)
-    if handles.infor(i)=="Domain" 
-        probabilities(nucleotides_arr<=cumu_nucleotides(i) & nucleotides_arr>cumu_nucleotides(i-1))=1;
+if isempty(handles.vol_sort_array) == false
+    N_nucleotides=handles.N_nucleotides;
+    
+    nucleotides_arr=linspace(1,N_nucleotides,N_nucleotides); %array with nucleotides
+    total_vol=sum(handles.vol_sort_array);
+    normalized_volumes=handles.vol_sort_array./total_vol;
+    nucleotides=normalized_volumes.*N_nucleotides;
+    cumu_nucleotides=round(cumsum(nucleotides),0);
+    probabilities=zeros(1,N_nucleotides);
+    
+    if handles.infor(1)=="Domain" 
+            probabilities(nucleotides_arr<=cumu_nucleotides(1))=1;
     end 
+    for i=2:length(cumu_nucleotides)
+        if handles.infor(i)=="Domain" 
+            probabilities(nucleotides_arr<=cumu_nucleotides(i) & nucleotides_arr>cumu_nucleotides(i-1))=1;
+        end 
+    end 
+    
+    %------------------------------------------------------------------------
+    stringResult = "[" + strjoin(handles.infor, ",") + "]";
+    
+    total_cell = {st, handles.vol_sort_array, stringResult,handles.thres_array, handles.Noise,cumu_nucleotides,probabilities};
+    SaveLine('Results.csv', total_cell)
 end 
-
-%------------------------------------------------------------------------
-stringResult = "[" + strjoin(handles.infor, ",") + "]";
-
-total_cell = {st, handles.vol_sort_array, stringResult,handles.thres_array, handles.Noise};
-SaveLine('Results.csv', total_cell)
-
-SaveLine('CumuSums.csv',{st cumu_nucleotides})
-SaveLine('Probabilities.csv',{st probabilities})
 
 guidata(hObject, handles);
 
@@ -636,6 +642,7 @@ end
 fclose(fid1);
 newImage = flip(mat,1);
 RNA1 = flip(newImage,2);
+%RNA1 = flip(mat,1);
 
 function RNA3=apply_threshold(handles)
 
@@ -654,10 +661,10 @@ cla reset
 imshow(RNA3);
 
 
-function [linkers,objects]=main_run(handles)
+function [linkers,objects,mc,skeleton_length,dob,MinAxisLength,MajorAxisLength,MaxFeret,MinFeret]=main_run(handles)
 
 handles.thres_array=sort(handles.thres_array);
-skeletonize(handles)
+[mc,skeleton_length,dob,MinAxisLength,MajorAxisLength,MaxFeret,MinFeret] = skeletonize(handles);
 n_steps=length(handles.thres_array);
 linker_map=zeros(size(handles.RNA2));
 object_map=zeros(size(handles.RNA2));
@@ -672,54 +679,54 @@ for i=1:n_steps-1
     low=handles.thres_array(i);
     high=handles.thres_array(i+1);
     
-    %guardamos la lista de pixeles de cada isla con el thres alto
+    %Save pixel list with high threshold
+
     maskhigh=zeros(size(handles.RNA2));
     maskhigh(handles.RNA2 > high) = 1; 
-    %maskhigh=imclearborder(maskhigh);
     CC_high = bwconncomp(maskhigh);    
     idx_list_high = CC_high.PixelIdxList;
     
-    %guardamos la lista de pixeles de cada isla con el thres bajo     
+    %Save pixel list with low threshold  
     masklow=zeros(size(handles.RNA2));
     masklow(handles.RNA2 > low) = 1;
     masklow=imclearborder(masklow);
     CC_low = bwconncomp(masklow);   
     idx_list_low = CC_low.PixelIdxList;  
 
-    %comparamos cada lista de pixeles bajo con cada lista de pixeles en el thres
-    %alto. Es decir, cada isla de thres bajo tiene de opciones:
+    %Compare the two lists. Three options:
     
-    %A. no coincidir con ninguna isla del alto
-    %B. coincidir con una isla del alto
-    %C. coincidir con 2 o más islas del alto
+    %A. does not match any region in the high threshold
+    %B. matches one region in the high threshold
+    %C. matches two or more regions in the high threshold
     
-    %En los casos A y B no se hace nada,  en el caso C: guardamos la lista
-    %de pixeles de las regiones que van a unirse (thres alto) 
-    
+    %In cases A and B, do nothing. In case C: store the list
+    %of pixels from the regions that will be merged (high threshold)
+
     for k=1:length(idx_list_low)        
         object_n=idx_list_low{k};
         tf = [];
         for j=1:length(idx_list_high)
             object_n2=idx_list_high{j};
-            C = ismember(object_n,object_n2); %C va a ser un array con 1 en las posiciones que coincidan y 0 en las que no
-            %Si C es todo ceros: el objeto n no coincide con el n2
-            %Si C esta compuesto de ceros y unos: el objeto si coincide
-            is_new=find(C==1, 1); %Este vector estará vacío si las islas no coinciden, y no lo estará si las isla coinciden 
+            C = ismember(object_n,object_n2); 
+            %If C is all zeros: Object n does not match with n2
+            %If C is 0 and 1s: they match
+            is_new=find(C==1, 1); %This vector will be empty if the object dont mtch, and not empty if they match
             if isempty(is_new)==1
-                tf = [tf, 0]; %0 indica que el objeto no coincide 
+                tf = [tf, 0]; %0: dont match
             else
-                tf=[tf, 1]; %1 indica que el objeto coincide 
+                tf=[tf, 1]; %1: match
             end 
         end 
-        %Si el tf hay mas de un 1: Caso C
-        %Si en el tf no hay ningún 1: caso A
-        %Si en el tf solo hay un 1: Caso B
+        %if more than one 1 in tf: Case C
+        %if no 1s in tf: case A
+        %if just one 1 in tf: Case B
+
         val=sum(tf);
         if val >1
-            %guardamos las islas que se han unido
+            %save the object that joined
              prev_objects_idx=find(tf==1);
              
-            %objetos se han unido en uno solo
+            %Objects joined in one
              for  indexes=1:length(prev_objects_idx)
              object_unido_n_idxs=idx_list_high{prev_objects_idx(indexes)};
              object_map_2=zeros(size(handles.RNA2));
@@ -736,7 +743,7 @@ for i=1:n_steps-1
             whole(whole>0)=1;
             linkers=whole-maskhigh;
 
-            %Nos quedamos solo con los branches importantes
+            %we keep the main branches
             %----------------------------------------------------------------------------------
             CLink=bwconncomp(linkers);        
             linkers_def=zeros(size(handles.RNA2));
@@ -751,7 +758,7 @@ for i=1:n_steps-1
                     [~,mask]=find_8_conn2(ep_loc(ep_i),handles.RNA2,0);
                     aux=mask-maskhigh;
                     sur=find(aux==1);
-                    if length(sur)<8 %este ep toca alguna region
+                    if length(sur)<8 %This ep touches a region
                         count=count+1;
                     end
                 end
@@ -983,15 +990,17 @@ function Add_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-
 vol1=handles.Volume(handles.row).vol;
 handles.tot_sum=handles.tot_sum + vol1;
 handles.NewReg(handles.labelMatrix==handles.row)=1;
 
 handles.Volume(handles.row).vol=0;
 handles.labelMatrix(handles.labelMatrix==handles.row)=0;
-
 guidata(hObject, handles);
+guidata(hObject, handles);
+
+
+
 
 % --- Executes on button press in Equal.
 function Equal_Callback(hObject, ~, handles)
@@ -1056,6 +1065,9 @@ function inizialize_sum_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+h = msgbox('Click in a region in  the "Volume" list, and then click the "+" button. Repeat with all regions you want to join. Then, click the "Finish joining" button ', 'Info');
+uiwait(h);
+
 handles.Volume2=[];
 handles.tot_sum=0;
 handles.NewReg=zeros(size(handles.RNA2));
@@ -1064,28 +1076,30 @@ guidata(hObject, handles);
 
 
 
-function skeletonize(handles)
+function [mc,skeleton_length,dob,MinAxisLength,MajorAxisLength,MaxFeret,MinFeret]=skeletonize(handles)
 
 [m,n]=size(handles.RNA2);
-handles.skeleton_image=ones(m,n,3);
+skeleton_image=ones(m,n,3);
 
-handles.RNA_molecule=imclearborder(handles.RNA_molecule);
+RNA_molecule=imclearborder(handles.RNA_molecule);
 
-handles.skeleton = bwmorph(handles.RNA_molecule,'thin', Inf);
-handles.skeleton = bwareaopen( handles.skeleton , handles.Remove_Smaller_Than );
+
+
+skeleton = bwmorph(RNA_molecule,'thin', Inf);
+skeleton = bwareaopen(skeleton , handles.Remove_Smaller_Than);
 
 
 se = strel('disk',5);
-handles.skeleton_dilated = imdilate(handles.skeleton,se);
-[x,y]=find(handles.skeleton_dilated);
+skeleton_dilated = imdilate(skeleton,se);
+[x,y]=find(skeleton_dilated);
 for i=1:length(x)
-    handles.skeleton_image(x(i),y(i),1)=0;
-    handles.skeleton_image(x(i),y(i),2)=0;
-    handles.skeleton_image(x(i),y(i),3)=0;
+    skeleton_image(x(i),y(i),1)=0;
+    skeleton_image(x(i),y(i),2)=0;
+    skeleton_image(x(i),y(i),3)=0;
 end 
 axes(handles.axes6);
 cla reset
-imshow(handles.skeleton_image);
+imshow(skeleton_image);
 
 if isempty(handles.RNAjpg) == 0 
     axes(handles.axes8)
@@ -1099,19 +1113,19 @@ else
 end 
 axes(handles.axes8);
 hold on
-[x,y]=find(handles.skeleton_image == 0);
+[x,y]=find(skeleton_image == 0);
 scatter(y,x,'filled','SizeData',1,'MarkerFaceColor','k');
-handles.RNAskel_tosave=handles.skeleton_image;
+handles.RNAskel_tosave=skeleton_image;
 
 
 
-ep = bwmorph(handles.skeleton,'endpoints');
+ep = bwmorph(skeleton,'endpoints');
 %Positions of the end-points
 [r,c] = find(ep); %Position (r:row, c:colum)
 ends_loc = find(ep); %Position (index)
 endpoints=[r,c,ends_loc];
 
-bp = bwmorph(handles.skeleton,'branchpoints');
+bp = bwmorph(skeleton,'branchpoints');
 [r1,c1] = find(bp); 
 B_loc = find(bp);
 branchpoints=[r1,c1,B_loc];
@@ -1122,7 +1136,7 @@ dd=size(endpoints);
 
 %Here we find the main chain distance 
 for k = 1:dd(1)
-    D = bwdistgeodesic(handles.skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean'); 
+    D = bwdistgeodesic(skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean'); 
     D(isinf(D)) = nan;
     endtoend(k) = max(D(endpoints(:,3))); 
     ind = D == endtoend(k); %Keeps the position of the endpoint to which [c(k),r(k)] distance is max
@@ -1130,41 +1144,45 @@ for k = 1:dd(1)
     index=find(ind);
     if endtoend(k) > max_length && (endtoend(k) ~= inf)
         max_length = endtoend(k);
-        ep1(1) = endpoints(k,1); %one endpoint of the longest chain
-        ep1(2) = endpoints(k,2);
-        ep1(3) = endpoints(k,3);
-        ep2(1) = r2; %The second endpoint of the main chain 
-        ep2(2) = c2;
-        ep2(3) = index;
+        ep1a(1) = endpoints(k,1); %one endpoint of the longest chain
+        ep1a(2) = endpoints(k,2);
+        ep1a(3) = endpoints(k,3);
+        ep2a(1) = r2; %The second endpoint of the main chain 
+        ep2a(2) = c2;
+        ep2a(3) = index;
     end
 end
+if ~exist('ep1a', 'var')
+    errordlg('No molecule found. Probably "Remove smaller than" is too high.', 'Error');
+    return;
+end
 
-D1 = bwdistgeodesic(handles.skeleton, ep1(2), ep1(1), 'quasi-euclidean'); %endpoint 1
-D2 = bwdistgeodesic(handles.skeleton, ep2(2), ep2(1), 'quasi-euclidean'); %endpoint 2
+D1 = bwdistgeodesic(skeleton, ep1a(2), ep1a(1), 'quasi-euclidean'); %endpoint 1
+D2 = bwdistgeodesic(skeleton, ep2a(2), ep2a(1), 'quasi-euclidean'); %endpoint 2
 D = D1 + D2;
 D = round(D * 8) / 8;
 D(isnan(D)) = inf;
 
-mc_lenght=max_length.*handles.factor;
+mc_length=max_length.*handles.factor;
 
 
-%Now we represent in the image the branches lenght (in red)
+
 
 if isempty(B_loc) == true
-    handles.mc= mc_lenght;
-    handles.skeleton_lenght = mc_lenght;
-    handles.dob = 1;
-    s=regionprops(handles.skeleton,'centroid');
+    s=regionprops(skeleton,'centroid');
     centroids=s.Centroid;
     axes(handles.axes6);
     hold on;
-    plot(centroids(1),centroids(2),'b*')
-    text(centroids(1),centroids(2), sprintf('%.2f', mc_lenght), ...
+    plot(centroids(1),centroids(2),'r*')
+    text(centroids(1),centroids(2), sprintf('%.2f', mc_length), ...
         'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
-else
+    skel_length= mc_length;
+
+elseif length(B_loc)==1
+
     for k = 1:numel(r)
-        matrix_resta=false(size(handles.skeleton));
-        D = bwdistgeodesic(handles.skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
+        matrix_resta=false(size(skeleton));
+        D = bwdistgeodesic(skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
         distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
                                         %the shortest parth is the length of the branch.
                                         %Takes into account the starting and ending branch of the main chain      
@@ -1172,59 +1190,56 @@ else
         matrix_resta(D < distanceToBranchPt)=true;
         s=regionprops(matrix_resta,'centroid');
         centroids=s.Centroid;
+        %Now we represent in the image the branches length (in red)
         axes(handles.axes6);
         hold on;
-        plot(centroids(1),centroids(2),'b*')
+        plot(centroids(1),centroids(2),'r*')
         text(centroids(1),centroids(2), sprintf('%.2f', branches_length(k)), ...
             'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
     end 
+    skel_length= sum(branches_length);
+    hold off;
 
-hold off;
-
-%Now we calculate the lenght of the skeleton
-
-skel_length=0;
-skeleton_aux=handles.skeleton;
-
-while length(B_loc) >= 2
-    branches_length=[];
-    matrix_resta=false(size(handles.skeleton));
+elseif length(B_loc)>1
     for k = 1:numel(r)
-            D = bwdistgeodesic(skeleton_aux,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
-            distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
-                                            % the shortest parth is the length of the branch.
-                                            % Takes into account the starting and ending branch of the main chain                  
-            branches_length(k) = distanceToBranchPt.*handles.factor;
-            matrix_resta(D < distanceToBranchPt)=true; %Matrix_resta contains all the branches
-    end 
-    skeleton_aux=skeleton_aux - matrix_resta; %Skeleton_aux contains a new skeleton (original - branches)
-    skeleton_aux=bwmorph(skeleton_aux,'thin');
-
-    %Calculate new ep and bp of the new skeleton 
-    ep = bwmorph(skeleton_aux,'endpoints');
-    [r,c] = find(ep); %Position (r:row, c:colum)
-    ends_loc = find(ep); %Position (index)
-    endpoints=[r,c,ends_loc];
-
-    bp = bwmorph(skeleton_aux,'branchpoints');
-    %[~,~]=find(bp);
-    B_loc = find(bp); %Update the value of B_loc (location of bp) - When number of bp is 1 or 0, the while loop ends
-    skel_length = skel_length + sum(branches_length);
-end 
-
-core_molecule = skeleton_aux;
-
-%2 cases: 1 bp remains, or no bp remains.
-if length(B_loc)==1 %If one bp remains, we erase branches until 0 bp remains:
-    while length(B_loc)==1
-        D = bwdistgeodesic(skeleton_aux,endpoints(1,2),endpoints(1,1),'quasi-euclidean');
+        matrix_resta=false(size(skeleton));
+        D = bwdistgeodesic(skeleton,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
         distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
-                                        % the shortest parth is the length of the branch.
-                                        % Takes into account the starting and ending branch of the main chain                  
-        matrix_resta(D < distanceToBranchPt)=true; %Matrix_resta contains one branches
-        skeleton_aux=skeleton_aux - matrix_resta; 
+                                        %the shortest parth is the length of the branch.
+                                        %Takes into account the starting and ending branch of the main chain      
+        branches_length(k) = distanceToBranchPt.*handles.factor;
+        matrix_resta(D < distanceToBranchPt)=true;
+        s=regionprops(matrix_resta,'centroid');
+        centroids=s.Centroid;
+        %Now we represent in the image the branches length (in red)
+        axes(handles.axes6);
+        hold on;
+        plot(centroids(1),centroids(2),'r*')
+        text(centroids(1),centroids(2), sprintf('%.2f', branches_length(k)), ...
+            'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
+    end 
+    hold off
+
+
+    %Now we calculate the length of the skeleton
+    
+    skel_length=0;
+    skeleton_aux=skeleton;
+    
+    while length(B_loc) >= 2
+        branches_length=[];
+        matrix_resta=false(size(skeleton));
+        for k = 1:numel(r)
+                D = bwdistgeodesic(skeleton_aux,endpoints(k,2),endpoints(k,1),'quasi-euclidean');
+                distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
+                                                % the shortest parth is the length of the branch.
+                                                % Takes into account the starting and ending branch of the main chain                  
+                branches_length(k) = distanceToBranchPt.*handles.factor;
+                matrix_resta(D < distanceToBranchPt)=true; %Matrix_resta contains all the branches
+        end 
+        skeleton_aux=skeleton_aux - matrix_resta; %Skeleton_aux contains a new skeleton (original - branches)
         skeleton_aux=bwmorph(skeleton_aux,'thin');
-        skel_length = skel_length + distanceToBranchPt.*handles.factor;
+    
         %Calculate new ep and bp of the new skeleton 
         ep = bwmorph(skeleton_aux,'endpoints');
         [r,c] = find(ep); %Position (r:row, c:colum)
@@ -1232,58 +1247,86 @@ if length(B_loc)==1 %If one bp remains, we erase branches until 0 bp remains:
         endpoints=[r,c,ends_loc];
     
         bp = bwmorph(skeleton_aux,'branchpoints');
+        %[~,~]=find(bp);
         B_loc = find(bp); %Update the value of B_loc (location of bp) - When number of bp is 1 or 0, the while loop ends
+        skel_length = skel_length + sum(branches_length);
     end 
-else %If no bp remains, we add the last segment:
-    D = bwdistgeodesic(skeleton_aux,endpoints(1,2),endpoints(1,1),'quasi-euclidean');
-    D(D==0)=inf;
-    distanceToBranchPt=min(D(ends_loc));
-    matrix_resta(D < distanceToBranchPt)=true;
-    if distanceToBranchPt ~= inf
-        skel_length = skel_length + distanceToBranchPt.*handles.factor;
+    
+    core_molecule = skeleton_aux;
+    
+    %2 cases: 1 bp remains, or no bp remains.
+    if length(B_loc)==1 %If one bp remains, we erase branches until 0 bp remains:
+        while length(B_loc)==1
+            D = bwdistgeodesic(skeleton_aux,endpoints(1,2),endpoints(1,1),'quasi-euclidean');
+            distanceToBranchPt = min(D(B_loc)); %Distances from the endpoint [c(k),r(k)] to all bp. 
+                                            % the shortest parth is the length of the branch.
+                                            % Takes into account the starting and ending branch of the main chain                  
+            matrix_resta(D < distanceToBranchPt)=true; %Matrix_resta contains one branches
+            skeleton_aux=skeleton_aux - matrix_resta; 
+            skeleton_aux=bwmorph(skeleton_aux,'thin');
+            skel_length = skel_length + distanceToBranchPt.*handles.factor;
+            %Calculate new ep and bp of the new skeleton 
+            ep = bwmorph(skeleton_aux,'endpoints');
+            [r,c] = find(ep); %Position (r:row, c:colum)
+            ends_loc = find(ep); %Position (index)
+            endpoints=[r,c,ends_loc];
+        
+            bp = bwmorph(skeleton_aux,'branchpoints');
+            B_loc = find(bp); %Update the value of B_loc (location of bp) - When number of bp is 1 or 0, the while loop ends
+        end 
     end 
+    if  isempty(B_loc) == true %If no bp remains, we add the last segment:
+        D = bwdistgeodesic(skeleton_aux,endpoints(1,2),endpoints(1,1),'quasi-euclidean');
+        D(D==0)=inf;
+        distanceToBranchPt=min(D(ends_loc));
+        if distanceToBranchPt ~= inf
+            skel_length = skel_length + distanceToBranchPt.*handles.factor;
+        end 
+    end 
+
+    
+    % We represent in the image the remaining values (segment between
+    % branchpoints mainly)
+    
+    bp = bwmorph(skeleton,'branchpoints');
+    bp_locs=find(bp);
+    
+    [~,mask]=find_8_conn2(bp_locs,skeleton,1);
+    
+    %Now the skeleton is divided in segments 
+    I_segmented = core_molecule & ~mask;
+    [L, num] = bwlabel(I_segmented);
+    
+    for k = 1:num
+        matrix_resta=false(size(skeleton));
+        branch_mask = L == k;
+        ep = bwmorph(branch_mask,'endpoints');
+        [r,c]=find(ep);
+        ends_loc = find(ep);
+        %Find the distance from every point in the branch to the nearest endpoint
+        D = bwdistgeodesic(branch_mask,c(1) ,r(1), 'quasi-euclidean');
+        distance = max(D(ends_loc));  % Max distance will be the length of the branch
+    
+        matrix_resta(D < distance )=true;
+        s=regionprops(matrix_resta,'centroid');
+        centroids=s.Centroid;
+        axes(handles.axes6);
+        hold on;
+        plot(centroids(1),centroids(2),'b*')
+        text(centroids(1),centroids(2), sprintf('%.2f', distance.*handles.factor), ...
+            'Color', 'blue', 'FontSize', 12, 'FontWeight', 'bold');
+    end
+    hold off
+    
+    %Final values of skeleton lengths:
+
 end 
 
-%Final values of skeleton lenghts:
-handles.mc= mc_lenght;
-handles.skeleton_lenght = skel_length;
-handles.dob = handles.skeleton_lenght/mc_lenght;
+mc= mc_length;
+skeleton_length = skel_length;
+dob = skeleton_length/mc_length;
 
-% We represent in the image the remaining values (segment between
-% branchpoints mainly)
-
-bp = bwmorph(handles.skeleton,'branchpoints');
-bp_locs=find(bp);
-
-[~,mask]=find_8_conn2(bp_locs,handles.skeleton,1);
-
-%Now the skeleton is divided in segments 
-I_segmented = core_molecule & ~mask;
-[L, num] = bwlabel(I_segmented);
-
-for k = 1:num
-    matrix_resta=false(size(handles.skeleton));
-    branch_mask = L == k;
-    ep = bwmorph(branch_mask,'endpoints');
-    [r,c]=find(ep);
-    ends_loc = find(ep);
-    %Find the distance from every point in the branch to the nearest endpoint
-    D = bwdistgeodesic(branch_mask,c(1) ,r(1), 'quasi-euclidean');
-    distance = max(D(ends_loc));  % Max distance will be the length of the branch
-
-    matrix_resta(D < distance )=true;
-    s=regionprops(matrix_resta,'centroid');
-    centroids=s.Centroid;
-    axes(handles.axes6);
-    hold on;
-    plot(centroids(1),centroids(2),'b*')
-    text(centroids(1),centroids(2), sprintf('%.2f', distance.*handles.factor), ...
-        'Color', 'blue', 'FontSize', 12, 'FontWeight', 'bold');
-end
-hold off
-end 
-
-etiquetas = bwlabel(handles.RNA_molecule);
+etiquetas = bwlabel(RNA_molecule);
 props = regionprops(etiquetas, 'Area');
 [~, indice_max_area] = max([props.Area]);
 RNA3_main = (etiquetas == indice_max_area);
@@ -1294,11 +1337,14 @@ props = regionprops(RNA3_main, 'BoundingBox');
 % Calcular el diámetro mínimo basado en el cuadro delimitador mínimo
 ancho = props.BoundingBox(3);
 alto = props.BoundingBox(4);
-handles.diametro_minimo = sqrt(ancho^2 + alto^2)*handles.factor;
 
-handles.MajorAxisLength =props1.MajorAxisLength*handles.factor;
-handles.MaxFeret= props1.MaxFeretDiameter*handles.factor;
-handles.MinFeret= props1.MinFeretDiameter*handles.factor;
+MinAxisLength = sqrt(ancho^2 + alto^2)*handles.factor;
+
+MajorAxisLength =props1.MajorAxisLength*handles.factor;
+MaxFeret= props1.MaxFeretDiameter*handles.factor;
+MinFeret= props1.MinFeretDiameter*handles.factor;
+
+
 
 
 % --- Executes on button press in checkbox2.
@@ -1458,161 +1504,6 @@ end
 
 
 
-% --- Executes on button press in browse_threshods.
-function browse_threshods_Callback(hObject, ~, handles)
-% hObject    handle to browse_threshods (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-[filename, filepath] = uigetfile('*.txt', 'Selecciona un archivo');
-
-% Combinar el nombre del archivo y la ubicación para obtener la ruta completa
-nombre_archivo = fullfile(filepath, filename);
-% Abrir el archivo para lectura
-fid = fopen(nombre_archivo, 'r');
-
-% Inicializar el vector para almacenar los valores de la tercera columna
-thresholds = [];
-file_ids=[];
-% Leer el archivo línea por línea
-while ~feof(fid)
-    % Leer una línea del archivo
-    linea = fgetl(fid);
-    
-    % Dividir la línea en partes utilizando ';' como delimitador
-    partes = strsplit(linea, ';');
-    
-    % Obtener el valor de la tercera columna y convertirlo a número
-    valor = str2double(partes{3});
-
-    file_id = str2double(partes{1});
-    
-    % Agregar el valor al vector thresholds
-    thresholds = [thresholds; valor];
-    file_ids=[file_ids;file_id];
-end
-
-% Cerrar el archivo
-fclose(fid);
-
-handles.All_Thresholds=thresholds;
-handles.Files_Ids=file_ids;
-
-
-guidata(hObject, handles);
-
-
-% --- Executes on button press in Automatic_Load.
-function Automatic_Load_Callback(hObject, ~, handles)
-% hObject    handle to Automatic_Load (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-handles.order=0;
-handles.data_directory=get(handles.data_path,'String');
-CurrentFolder=pwd;
-handles.fileindex=1;
-handles.fileindex_load=1;
-cd(handles.data_directory);
-
-handles.AllFileNames=dir('*.txt');
-cd(CurrentFolder)
-handles.chckflder=length(handles.AllFileNames);
-
-if handles.chckflder == 0
-    msgbox('The provided input folder is empty.','ERROR', 'error')
-else 
-    MajorAxisLengths= [];
-    diametros_minimos =[];
-    MaxFeret_all=[];
-    MinFeret_all=[];
-    for h=1:length(handles.All_Thresholds)
-    [handles.RNA, handles.FileName, handles.factor]= func_load(handles.data_directory,handles.AllFileNames, handles.fileindex_load,handles.resize_factor);
-    st=handles.FileName;
-    ix=find(st=='.');
-    num=str2double(st(1:ix-1));
-    while num ~= handles.Files_Ids(handles.fileindex)
-        handles.fileindex_load= handles.fileindex_load+1;
-        [handles.RNA, handles.FileName,handles.factor]= func_load(handles.data_directory,handles.AllFileNames, handles.fileindex_load,handles.resize_factor);
-        st=handles.FileName;
-        ix=find(st=='.');
-        num=str2double(st(1:ix-1));
-    end 
-    [MajorAxisLength,diametro_minimo,MaxFeret,MinFeret,skeleton_matrix]=automatic_run(handles.RNA,handles.fileindex,handles.All_Thresholds,handles.axes1); 
-    
-    axes(handles.axes1)
-    imshow(skeleton_matrix)
-    pause
-    name=[st(1:ix-1),'.txt'];
-    writematrix(skeleton_matrix,  name,'Delimiter','tab');
-    MajorAxisLengths = [MajorAxisLengths;MajorAxisLength];
-    diametros_minimos =[diametros_minimos; diametro_minimo];
-    MaxFeret_all=[MaxFeret_all;MaxFeret];
-    MinFeret_all=[MinFeret_all;MinFeret];
-    %pause
-    handles.fileindex = handles.fileindex+1;
-    handles.fileindex_load = handles.fileindex_load+1;
-    handles.order=0;
-    end 
-end 
-% 
-% cell2={MajorAxisLengths};
-% cell3={diametros_minimos};
-% 
-% handles.Results_Props=[cell2;cell3];
-% writecell(handles.Results_Props,'EnclosingCircleData.dat');
-
-fid = fopen('Results_Props.txt', 'w');
-fprintf(fid, 'MajorAxisLengths\tdiametro_minimo\tMaxFeret\tMinFeret\n'); % Encabezado
-fprintf(fid, '%f\t%f\t%f\t%f\n', [MajorAxisLengths, diametros_minimos,MaxFeret_all,MinFeret_all].'); % Datos
-fclose(fid);
-
-guidata(hObject, handles);
-
-
-function [MajorAxisLength,diametro_minimo,MaxFeret,MinFeret,skeleton_matrix] = automatic_run (RNA,fileindex,All_Thresholds,axess)
-
-handles.RNA2=imgaussfilt(RNA,5);
-RNA3=handles.RNA2;
-mask=RNA3>All_Thresholds(fileindex);
-RNA3(mask==0)=0;
-
-etiquetas = bwlabel(RNA3);
-
-% Calcular el área de cada región etiquetada
-props = regionprops(etiquetas, 'Area');
-% Encontrar la etiqueta de la región con el área más grande
-[~, indice_max_area] = max([props.Area]);
-
-% Crear una nueva imagen binaria con solo la región más grande
-RNA3_main = (etiquetas == indice_max_area);
-% 
-% axes(axess);
-% cla reset
-% imshow(RNA3_main);
-
-props1= regionprops(RNA3_main, 'MajorAxisLength',"MaxFeretProperties", "MinFeretProperties");
-props = regionprops(RNA3_main, 'BoundingBox');
-
-% Calcular el diámetro mínimo basado en el cuadro delimitador mínimo
-ancho = props.BoundingBox(3);
-alto = props.BoundingBox(4);
-diametro_minimo = sqrt(ancho^2 + alto^2);
-
-MajorAxisLength =props1.MajorAxisLength;
-MaxFeret= props1.MaxFeretDiameter;
-MinFeret= props1.MinFeretDiameter;
-
-
-% ahora calcular skeleton e importar matix con el numero.txt
-
-skeleton_matrix = bwmorph(RNA3_main,'thin', Inf);
-
-
-
-
 function edit12_Callback(hObject, ~, handles)
 % hObject    handle to edit12 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1662,5 +1553,7 @@ function N_nucleotides_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
 
 
