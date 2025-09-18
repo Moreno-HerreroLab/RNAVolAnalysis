@@ -47,7 +47,8 @@ end
 % --- Executes during object creation, after setting all properties.
 function data_path_CreateFcn(hObject, ~, ~)
 
-data_directory = '\test_images';
+ini=string(pwd);
+data_directory = strjoin([ini,'\test_images'],'');
 set(hObject,'String', num2str(data_directory));
 
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -287,6 +288,11 @@ function push_auto_thres_Callback(hObject, ~, handles)
 % if exist(handles.RNA2, 'var') ==0
 %     msgbox('Please smooth the image first','ERROR', 'error')
 % else 
+
+if ~isfile('isodata.m')
+    msgbox('You need to have isodata.m in the current folder. You can download it from https://es.mathworks.com/matlabcentral/fileexchange/3195-automatic-thresholding.','ERROR', 'error');
+end
+
 handles.threshold=isodata(handles.RNA2);
 set(handles.threshold_edit,'String',num2str(handles.threshold));
 set(handles.thres_slider,'Value',handles.threshold);
