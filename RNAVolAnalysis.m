@@ -75,7 +75,7 @@ set(handles.pixel_size,'String', num2str(handles.resize_factor));
 
 delete *.csv
 
-headerSkels = {'File Name','Threshold','Skeleton Length','Main Chain Length','MajorAxis Lenght','Smallest diameter','MinFeret','MaxFeret'};
+headerSkels = {'File Name','Threshold','Skeleton Length','Main Chain Length','MajorAxis Length','Smallest diameter','MinFeret','MaxFeret'};
 SaveLine('Results_Skels.csv',headerSkels)
 
 headerMolecule = {'File Name', 'Volumes', 'info', 'thresholds','background noise','Cumulative Sums','Probabilities'};
