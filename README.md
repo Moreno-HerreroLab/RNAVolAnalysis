@@ -25,7 +25,7 @@ To get started with the AFM-RNA-Analysis MATLAB GUI, follow these steps:
 
 ## Contributions and Feedback
 
-Contributions to this project are welcome! If you find issues, want to add new features, or improve existing ones, feel free to fork the repository and submit pull requests. Additionally, we appreciate any feedback that can help enhance the usability and functionality of the GUI.
+If you find issues, want to add new features, or improve existing ones, feel free to fork the repository and submit pull requests. Additionally, we appreciate any feedback that can help enhance the usability and functionality of the GUI.
 
 ## License
 

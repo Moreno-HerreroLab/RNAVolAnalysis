@@ -1,56 +1,153 @@
 # RnaVol analysis user guide
 
-Here we provide an user guide for the RNAVolAnalysis GUI. This was specially developed for calculating the volume of RNA molecules regions. With this algorithm, molecules are segmented into regions and linkers connecting them. Here is an step by step guide on how to use the program:
 
-1. Load Image:
-   - Launch MATLAB on your computer.
-   - Clone or download the repository and navigate to its directory.
-   - Open the MATLAB GUI by running the `RNAVolAnalysis.m` script.
-   - Browse and select the folder where AFM images you want to analyse is stored. Click on the "Load" button. If there are many images, you can load them clicking the ‘next’ or ‘previous’ buttons.
-   - Once you load the image, a message will pop up saying that you need to specify the number of nucleotides your RNA molecules has. This is used to calculate the volume/nuleotide conversion and for the domain profile output (CumuSums). Write the number of nucleotides in the red "nucleotides" section
+**RNAVolAnalyzer** is a MATLAB-based graphical interface for analyzing RNA molecules from **WSxM topographic data (.txt files)**. The software extracts molecular volumes, segments RNA into structural regions (domains and linkers), and computes morphological descriptors such as skeleton length and main-chain length. 
+The tool is designed for the analysis of single RNA molecules obtained from scanning probe microscopy data.
 
-2. Apply Gaussian Smoothing:
-   - Input the desired standard deviation parameter for the Gaussian filter.
-   - Click "Apply" to smooth the image. This step enhances the image quality for analysis.
+---
 
-3. Select ROI if your RNA y tagged
-   - In some case you could want to select manually the ROI, excluding parts of the images that may be touching your molecule, noise, or because your molecule is tagged and you would like to exclude the tag (in our case example, we want to exclude polyA tails). Mark The polyA tagged checkbox.
-   - Click the "Select ROI" button and select your area.
+# Requirements
 
-4. Threshold Selection for Molecule:
-   - Choose either "Auto-Threshold" or manually adjust the threshold using the slider or numerical input bar.
-   - Adjust the threshold until you're satisfied with the molecule segmentation.
-   - Click "Select Molecule Threshold" to save the threshold value.
+* **MATLAB**
+* Input files: **WSxM `.txt` files** containing a numeric matrix preceded by a header
+* **`isodata.m`** for automatic thresholding
+  ([https://es.mathworks.com/matlabcentral/fileexchange/3195-automatic-thresholding](https://es.mathworks.com/matlabcentral/fileexchange/3195-automatic-thresholding))
 
-5. Domain Threshold Selection:
-   - Gradually increase the threshold to separate individual regions within the molecule.
-   - For each domain, click the "Select Domain Threshold" button to save the threshold value.
-   - Repeat this step for all domains you want to analyze.
+---
 
-6. Run Analysis:
-   - Once you've selected threshold values for all domains, click the "Run" button.
-   - The GUI will process the image and calculate the volumes of the segmented regions.
+# Installation
 
-7. View Volume Table:
-   - After analysis, a table will be displayed on the GUI showing volume values for each region.
-   - The segmented regions will also be displayed on the figure.
+1. Download the **RNAVolAnalyzer** repository.
+2. Open MATLAB and navigate to the project directory.
+3. Run:
 
-8. Sort Regions for Export:
-   - Examine the table and determine the order in which you want to export the regions.
-   - Sort the regions based on your preference or analysis requirements, first selecting the value in the table and then pressing the ‘Sort’ button
-    -Sorted values will appear in the adjacent table. If you make a mistake, press ‘Clear Sort’ to start again
+```matlab
+RNAVolAnalyzer
+```
 
-9. Choose colors for your segmented image (Optional):
-   - If you want to export an image with the regions, select a color in the menu (in the assign color button group) and write the region number you want to color.
-   - Press ‘Change color’
-   - If you want to reset the colors and start all over again, press ‘Reset colors’
+The graphical user interface (GUI) will open.
 
-10. Save Molecule Data:
-    - If needed, you can save the volume values, thresholds values used and background noise for further analysis.
-    - Click the "Save Molecule" button to save all these values in a .txt file. As long as you do not close the GUI window, the following molecules data will be save in the same txt file, named ‘Results’
+---
+
+# Basic Workflow
+
+## 1. Load Image Data
+
+* Click **Browse** to select a folder containing WSxM `.txt` files. By default, the test_image folder is already pre-selected
+* Click **Load** to display the first image.
+* Enter the **number of nucleotides** of you RNA sample in the indicated edit box.
+
+---
+
+## 2. Apply Gaussian Smoothing
+
+A Gaussian filter must be applied before analysis.
+
+1. Set the **Gaussian sigma** value.
+2. Click **Smooth**.
+
+The filtered image will appear in the processing window and will be rescaled according to the selected pixel resolution.
+
+---
+
+## 3. Select Molecule Threshold
+
+Define the height threshold that separates the molecule from the background.
+
+Options:
+
+* **Auto-threshold** (requires `isodata.m`)
+* Manual adjustment via **slider or numeric input**
+
+Once satisfied, click **SELECT MOLECULE THRESHOLD**.
+
+---
+
+## 4. Segment Domains and Linkers
+
+RNA molecules can be segmented into structural regions using **domain thresholds**.
+
+1. Adjust a threshold value that reveals a domain.
+2. Click **Select Domain Threshold**.
+3. Repeat for additional domains.
+4. Click **RUN** to perform segmentation and skeletonization.
+
+The program generates:
+
+* **Skeleton representation of the molecule**
+* **Domain and linker segmentation**
+* **Volume calculation for each region**
+
+---
+
+## 5. Edit Segmentation (Optional)
+
+After segmentation, you can sort the regions to match the structural logic of your molecule (e.g., domain–linker–domain–linker–domain).
+To do so, you can select the volume displayed and select the "sort" button. You can additionaly:
+* **Join Regions** to merge adjacent regions
+* **Assign Colors** for visualization
+
+---
+
+## 6. Save Results
+
+Click **SAVE MOLECULE** to export the analysis.
+
+Each analyzed molecule is saved as **one row** in the output files. When analyzing multiple images, new rows are appended automatically.
+
+---
+
+# Navigation
+
+Use the GUI buttons to move through images in the selected folder:
+
+* **Next >>** – load next molecule
+* **<< Prev** – return to previous molecule
+
+---
+
+
+# Output Files
+
+The program generates two output files:
+
+### Results
+
+Contains:
+
+* File name
+* Region volumes
+* Domain/linker classification
+* Applied thresholds
+* Estimated nucleotide distribution
+
+### Results_Skels
+
+Contains:
+
+* Molecule threshold
+* Skeleton length
+* Main-chain length
+* Additional morphological metrics (e.g., Feret diameters, axis lengths)
+
+---
+
+# Poly(A)-Tagged Molecules 
+
+For RNA molecules containing **poly(A) tails**, the tails can be excluded from the analysis.
+
+1. Enable **PolyA tagged?**
+2. Click **SELECT ROI**
+3. Manually draw the **region of interest (ROI)** around the molecule body
+
+Thresholding and analysis will then be applied **only within the selected ROI**.
+
+---
+
+# Citation
+
+
 
 ## Note:
-- Ensure that you have MATLAB installed and have the necessary toolboxes for image processing and GUI development.
--For the autothreshold to work, you need to add to your directory the isodata.m (https://www.mathworks.com/matlabcentral/fileexchange/3195-automatic-thresholding)
 - Take time to adjust the thresholds accurately, as they significantly affect the quality of segmentation and volume calculation.
--If you have any question or comment, please contact em.martin@cnb.csic.es 
+- If you have any question or comment, please contact em.martin@cnb.csic.es 
